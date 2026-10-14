@@ -1,0 +1,50 @@
+[
+  {
+    "id": "mountains",
+    "title": "Горы",
+    "author": "Nathan Anderson",
+    "source": "https://unsplash.com/photos/landscape-photography-of-mountains-P-G08ayLNGM",
+    "file": "assets/mountains.jpg",
+    "license": "https://unsplash.com/license"
+  },
+  {
+    "id": "space",
+    "title": "Космос",
+    "author": "Jeremy Thomas",
+    "source": "https://unsplash.com/photos/E0AHdsENmDg",
+    "file": "assets/space.jpg",
+    "license": "https://unsplash.com/license"
+  },
+  {
+    "id": "music",
+    "title": "Музыка",
+    "author": "C D-X",
+    "source": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e",
+    "file": "assets/music.jpg",
+    "license": "https://unsplash.com/license"
+  },
+  {
+    "id": "sport",
+    "title": "Баскетбол",
+    "author": "Unsplash",
+    "source": "https://images.unsplash.com/photo-1546519638-68e109498ffc",
+    "file": "assets/sport.jpg",
+    "license": "https://unsplash.com/license"
+  },
+  {
+    "id": "earth",
+    "title": "Земля",
+    "author": "Unsplash",
+    "source": "https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4",
+    "file": "assets/earth.jpg",
+    "license": "https://unsplash.com/license"
+  },
+  {
+    "id": "ocean",
+    "title": "Океан",
+    "author": "Unsplash",
+    "source": "https://images.unsplash.com/photo-1439405326854-014607f694d7",
+    "file": "assets/ocean.jpg",
+    "license": "https://unsplash.com/license"
+  }
+]
