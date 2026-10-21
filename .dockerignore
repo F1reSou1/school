@@ -1,0 +1,11 @@
+**
+!Dockerfile
+!web-lab/
+!web-lab/**
+web-lab/.gitignore
+web-lab/tests/
+web-lab/deploy/
+web-lab/*.md
+web-lab/**/__pycache__/
+web-lab/**/*.pyc
+web-lab/preview*.jpg

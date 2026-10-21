@@ -2,7 +2,10 @@
 import base64
 from concurrent.futures import ThreadPoolExecutor
 import json
+import os
 from pathlib import Path
+import select
+import subprocess
 import sys
 import threading
 import time
@@ -67,6 +70,15 @@ class PhotoHandoffTests(unittest.TestCase):
         self.assertIsNone(self.request(second['poll_url'])[1]['image'])
         self.assertEqual(self.request(first['poll_url'].split('?')[0] + '?key=wrong')[0], 404)
         self.assertEqual(self.request(first['poll_url'].split('?')[0] + '?key=' + token)[0], 404)
+
+    def test_health_check_does_not_allocate_or_modify_sessions(self):
+        session, _ = self.create()
+        for _ in range(3):
+            self.assertEqual(self.request('/api/health'),
+                             (200, {'ok': True, 'service': 'school-workshop'}))
+        with server.LOCK:
+            self.assertEqual(len(server.SESSIONS), 1)
+        self.assertEqual(self.request(session['poll_url'])[1], {'image': None})
 
     def test_delete_revokes_phone_link(self):
         session, token = self.create()
@@ -192,6 +204,33 @@ class PhotoHandoffTests(unittest.TestCase):
         self.assertEqual(self.request('/lesson.js')[0], 200)
         for path in ['/server.py', '/vendor/qrcodegen.py', '/assets/../server.py', '/../README.md']:
             self.assertEqual(self.request(path)[0], 404)
+
+
+class DeploymentStartupTests(unittest.TestCase):
+    def test_container_environment_and_cli_override(self):
+        for arguments, expected in [([], 'https://school.tube-city.ru'),
+                                     (['--public-url', 'https://preview.example'], 'https://preview.example')]:
+            with self.subTest(arguments=arguments):
+                env = dict(os.environ, PORT='0', WORKSHOP_PUBLIC_URL='https://school.tube-city.ru')
+                process = subprocess.Popen([sys.executable, '-B', str(server.ROOT / 'server.py'),
+                                            '--bind', '127.0.0.1', *arguments], env=env,
+                                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                try:
+                    self.assertTrue(select.select([process.stdout], [], [], 5)[0], 'startup timed out')
+                    line = process.stdout.readline().strip()
+                    self.assertTrue(line.startswith('Local: http://127.0.0.1:'), line)
+                    base = line.removeprefix('Local: ').rstrip('/')
+                    self.assertNotEqual(urlsplit(base).port, 0, 'PORT=0 binds an actual free port')
+                    with urlopen(base + '/api/health', timeout=3) as response:
+                        self.assertEqual(json.load(response), {'ok': True, 'service': 'school-workshop'})
+                    request = Request(base + '/api/photo-sessions', method='POST', headers={'Origin': expected})
+                    with urlopen(request, timeout=3) as response:
+                        self.assertEqual(response.status, 201)
+                        self.assertTrue(json.load(response)['upload_url'].startswith(expected + '/upload.html#'))
+                finally:
+                    process.terminate()
+                    process.wait(timeout=3)
+                    process.stdout.close()
 
 
 if __name__ == '__main__':

@@ -1,65 +1,56 @@
-# QR на school.tube-city.ru
+# Деплой в Dokploy
 
-Статический nginx отдаёт редактор, но не выполняет Python. Ответ 404 на `POST /api/photo-sessions` означает, что маршрут сервиса не подключён. Нужны постоянно работающий `server.py` и проксирование `/api/` в него. Одна замена HTML/JS это не исправляет.
+Редактор, страница загрузки с телефона и QR API запускаются **одним контейнером** из Dockerfile в корне репозитория. Настройка nginx, systemd и SSH не требуется. Домен и HTTPS обслуживает Dokploy.
 
-## Установка на Ubuntu/Debian с nginx и systemd
+## Один раз в приложении Dokploy
 
-Из корня актуального checkout репозитория (там находится папка `web-lab`):
+В General / настройках сборки:
+
+| Поле | Значение |
+| --- | --- |
+| Branch | `codex/web-workshop` |
+| Build Path | `/` (корень репозитория) |
+| Build Type | `Dockerfile` |
+| Dockerfile Path | `Dockerfile` |
+| Docker Context Path (если есть) | `.` |
+
+В Domains у существующего `school.tube-city.ru`: **Container Port `80`**, Path `/`, HTTPS включён. Это тот же порт, который использует Static. Отдельный домен или маршрут для `/api/` не нужен.
+
+Сохраните настройки и нажмите **Deploy**. Тип Static или Nixpacks с Publish Directory не запускает QR API: для этой сборки нужен именно Dockerfile.
+
+В Dockerfile уже заданы `PORT=80` и `WORKSHOP_PUBLIC_URL=https://school.tube-city.ru`. Добавлять переменные в панели для этого домена не нужно. Если Environment в Dokploy уже содержит `PORT` или `WORKSHOP_PUBLIC_URL`, удалите старые значения либо задайте указанные выше: переменные панели имеют приоритет над значениями образа.
+
+Используйте одну реплику приложения: временные QR-сеансы хранятся в памяти одного процесса. Перезапуск или новый деплой завершает открытые QR-сеансы; создайте новые QR. Сохранённые проекты остаются в браузере.
+
+## Проверка после деплоя
+
+Откройте `https://school.tube-city.ru/api/health`. Ожидается:
+
+```json
+{"ok": true, "service": "school-workshop"}
+```
+
+Затем обновите редактор и отправьте фото по новому QR. Нужен доступ к домену с обоих устройств; общая Wi-Fi-сеть не требуется.
+
+- Если `/api/health` возвращает 404 или HTML, домен ещё ведёт на статическую сборку. Проверьте Build Type, выбранную ветку и успешное завершение последнего Deploy.
+- Если 502, проверьте Logs приложения, Container Port `80` и отсутствие другого значения `PORT` в Environment.
+- Проверка готовности `/api/health` встроена в Dockerfile. Временные ссылки и ключи QR в логи API не записываются.
+
+## Другой домен
+
+В Environment задайте `WORKSHOP_PUBLIC_URL=https://ваш-домен`, сохраните и сделайте Deploy. Сервер использует этот адрес для ссылок в QR и проверки Origin за HTTPS-прокси. При необходимости другой порт задаётся переменной `PORT`; Container Port в Domains должен совпадать с ней.
+
+## Локальная проверка контейнера
+
+Из корня репозитория:
 
 ```sh
-sudo install -d -m 755 /opt/school-photo
-sudo cp -R web-lab/. /opt/school-photo/
-sudo chmod -R a+rX /opt/school-photo
-sudo install -m 644 web-lab/deploy/school-photo.service /etc/systemd/system/school-photo.service
-sudo systemctl daemon-reload
-sudo systemctl enable --now school-photo
-sudo systemctl restart school-photo
-sudo install -m 644 web-lab/deploy/school-photo.nginx.conf /etc/nginx/snippets/school-photo.conf
+docker build -t school-workshop .
+docker run --rm -p 4173:80 -e WORKSHOP_PUBLIC_URL=http://192.168.1.10:4173 school-workshop
 ```
 
-Сервис использует Python 3.9+, без сторонних пакетов. Работает от `www-data` на `127.0.0.1:4174`; открывать этот порт в интернет не нужно. В unit задан публичный HTTPS-адрес: его сервер использует для проверки Origin и ссылки в QR.
+Замените `192.168.1.10` сетевым адресом своего компьютера. Откройте редактор на `http://127.0.0.1:4173/`, телефон подключите к той же сети.
 
-В **существующий `server { … }` для HTTPS-домена `school.tube-city.ru`** добавьте:
+Ручной вариант для администратора отдельного сервера сохранён в [manual-nginx.md](manual-nginx.md); для Dokploy он не нужен.
 
-```nginx
-include /etc/nginx/snippets/school-photo.conf;
-```
-
-Если в этом блоке уже есть `location /api/`, замените его содержимым из `school-photo.nginx.conf` вместо добавления второго. Настройки TLS и статического корня сайта сохраняются. По статическому корню должны быть доступны актуальные `upload.html`, `upload.js`, `upload.css`, `photo.js` и остальные файлы редактора из `web-lab`.
-
-Проверьте конфигурацию и только затем перезагрузите nginx:
-
-```sh
-sudo nginx -t && sudo systemctl reload nginx
-```
-
-## Проверка
-
-```sh
-curl -i -X POST -H 'Origin: https://school.tube-city.ru' https://school.tube-city.ru/api/photo-sessions
-```
-
-Ожидается **201**, JSON с `upload_url`, `poll_url`, `qr_url`; `upload_url` начинается с `https://school.tube-city.ru/upload.html#token=`. Ссылки содержат временные ключи: не публикуйте их. Проверочный сеанс истечёт через 10 минут.
-
-Обновите редактор в браузере и отправьте фото с телефона по новому QR. Для опубликованного HTTPS-сайта общая Wi-Fi-сеть не требуется: обоим устройствам нужен доступ к домену.
-
-Если ответ 502, проверьте сервис:
-
-```sh
-sudo systemctl status school-photo --no-pager
-sudo journalctl -u school-photo -n 30 --no-pager
-```
-
-Если ответ 404, проверьте, что include добавлен в активный HTTPS-блок нужного домена и nginx перезагружен. Если 403, проверьте `--public-url` в unit и `Origin`: оба должны указывать на `https://school.tube-city.ru`.
-
-## Обновления
-
-После получения новых файлов повторите копирование и перезапустите сервис:
-
-```sh
-sudo cp -R web-lab/. /opt/school-photo/
-sudo chmod -R a+rX /opt/school-photo
-sudo systemctl restart school-photo
-```
-
-Перезапуск удаляет временные QR-сеансы из памяти. Создайте новые QR; сохранённые проекты в браузерах сохранятся. Один процесс сервиса обслуживает все сеансы. Несколько независимых процессов потребуют общего хранилища сеансов.
+Документация Dokploy: [Dockerfile build](https://docs.dokploy.com/docs/core/applications/build-type), [Domains и Container Port](https://docs.dokploy.com/docs/core/domains).

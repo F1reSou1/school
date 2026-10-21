@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Static workshop + short-lived LAN photo handoff. Python 3.9+, no install."""
+"""Workshop and QR photo handoff in one process. Python 3.9+, no install."""
 import argparse
 import base64
 import binascii
 import ipaddress
 import json
+import os
 from pathlib import Path
 import re
 import secrets
@@ -121,6 +122,8 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         path = urlsplit(self.path).path
+        if path == '/api/health':
+            return self.respond(200, {'ok': True, 'service': 'school-workshop'})
         if path.startswith('/api/'):
             with LOCK:
                 prune_sessions()
@@ -202,13 +205,14 @@ class Handler(SimpleHTTPRequestHandler):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--port', type=int, default=4173)
+    parser.add_argument('--port', type=int, default=os.environ.get('PORT', '4173'))
     parser.add_argument('--bind', default='0.0.0.0')
-    parser.add_argument('--public-url', help='Address reachable from phones, e.g. https://school.example or http://192.168.1.10:4173')
+    parser.add_argument('--public-url', default=os.environ.get('WORKSHOP_PUBLIC_URL'),
+                        help='Address reachable from phones (or WORKSHOP_PUBLIC_URL environment variable)')
     args = parser.parse_args()
     server = ThreadingHTTPServer((args.bind, args.port), Handler)
-    server.public_url = (args.public_url or f'http://{lan_address()}:{args.port}').rstrip('/')
-    print(f'Local: http://127.0.0.1:{args.port}/', flush=True)
+    server.public_url = (args.public_url or f'http://{lan_address()}:{server.server_port}').rstrip('/')
+    print(f'Local: http://127.0.0.1:{server.server_port}/', flush=True)
     print(f'Phone / classroom: {server.public_url}/', flush=True)
     try:
         server.serve_forever(poll_interval=0.5)
