@@ -60,6 +60,87 @@ test('fresh lesson opens theory; later tasks locked; every block is in the pool'
   assert.match(ui.doc.querySelector('#next-step').textContent,/h1/);
 });
 
+test('classes can be edited inside a block without losing focus, dragging or saving partial names',t=>{
+  const ui=editor(t);ui.click('#theory-start');
+  const input=ui.doc.querySelector('[data-class-path="0.0.1"]');
+  assert.equal(input.value,'intro');
+  input.focus();input.click();
+  assert.equal(ui.run('state.selectedPath'),'0.0.1');
+  assert.equal(ui.doc.activeElement,input);
+  assert.equal(ui.doc.querySelector('#property-class').value,'intro');
+  assert.equal(input.closest('.block-row').draggable,false);
+  input.dispatchEvent(new ui.win.MouseEvent('pointerdown',{bubbles:true,button:0}));
+  assert.equal(ui.run('pointerDrag'),null,'editing must not start a block drag');
+  input.value='intro interesting_description';
+  input.dispatchEvent(new ui.win.Event('input',{bubbles:true}));
+  assert.equal(ui.run(`parseHTML().querySelector('header p').className`),'intro');
+  const space=new ui.win.KeyboardEvent('keydown',{key:' ',bubbles:true,cancelable:true});
+  input.dispatchEvent(space);assert.equal(space.defaultPrevented,false,'space separates class names');
+  input.dispatchEvent(new ui.win.KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+  assert.equal(ui.run(`parseHTML().querySelector('header p').className`),'intro interesting_description');
+  assert.equal(ui.doc.activeElement,input,'Enter retains the original input and caret');
+  assert.equal(ui.doc.querySelector('#property-class').value,'intro interesting_description');
+  assert.ok(ui.doc.querySelector('[data-edit-class="interesting_description"]'));
+  input.value='unfinished';
+  input.dispatchEvent(new ui.win.KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
+  assert.equal(input.value,'intro interesting_description');
+  assert.equal(ui.run(`parseHTML().querySelector('header p').className`),'intro interesting_description');
+  assert.equal(input.closest('.block-row').draggable,true);
+  ui.click('#undo-button');
+  assert.equal(ui.run(`parseHTML().querySelector('header p').className`),'intro','one undo reverts the complete edit');
+});
+
+test('inline blur commits reach HTML, preview and saved project; unchanged values add no undo entries',t=>{
+  const ui=editor(t);ui.click('#theory-start');
+  const input=ui.doc.querySelector('[data-class-path="0.0.0"]');input.focus();
+  input.value='my_name shared';input.dispatchEvent(new ui.win.Event('change',{bubbles:true}));
+  assert.equal(ui.run(`parseHTML().querySelector('h1').className`),'my_name shared');
+  assert.match(ui.doc.querySelector('#preview-frame').srcdoc,/class="my_name shared"/);
+  const count=ui.run('history.length');
+  input.dispatchEvent(new ui.win.Event('change',{bubbles:true}));
+  assert.equal(ui.run('history.length'),count);
+  ui.run('persistState()');
+  const restored=editor(t,JSON.parse(ui.win.localStorage.getItem('web-workshop-projects-v1')));
+  assert.equal(restored.doc.querySelector('[data-class-path="0.0.0"]').value,'my_name shared');
+  input.value='';input.dispatchEvent(new ui.win.Event('change',{bubbles:true}));
+  assert.equal(ui.run(`parseHTML().querySelector('h1').hasAttribute('class')`),false);
+  assert.equal(input.closest('.block-row').querySelector('[data-clear-block-classes]').disabled,true);
+});
+
+test('named class removal and clear buttons detach only the chosen block and keep shared CSS',t=>{
+  const ui=editor(t);ui.click('#theory-start');
+  ui.run(String.raw`mutateHTML(doc=>{for(const node of doc.querySelectorAll('header h1,header p'))node.className='shared extra';return doc.querySelector('h1');});state.files['style.css']+='\n.shared { color: red; }\n.extra { padding: 4px; }';renderProperties();`);
+  const css=ui.run(`state.files['style.css']`);
+  ui.click('[data-remove-class="extra"]');
+  assert.equal(ui.run(`parseHTML().querySelector('h1').className`),'shared');
+  assert.equal(ui.doc.querySelector('[data-class-path="0.0.0"]').value,'shared');
+  const clear=ui.doc.querySelector('[data-clear-block-classes="0.0.0"]');
+  const key=new ui.win.KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true});
+  clear.dispatchEvent(key);assert.equal(key.defaultPrevented,false,'action buttons retain native keyboard activation');
+  clear.click();
+  assert.equal(ui.run(`parseHTML().querySelector('h1').hasAttribute('class')`),false);
+  assert.equal(ui.run(`parseHTML().querySelector('header p').className`),'shared extra');
+  assert.equal(ui.run(`state.files['style.css']`),css,'CSS still applies to other blocks');
+  ui.click('#undo-button');
+  assert.equal(ui.run(`parseHTML().querySelector('h1').className`),'shared');
+});
+
+test('explicit delete block buttons remove the chosen subtree and undo restores it',t=>{
+  const ui=editor(t);ui.click('#theory-start');
+  const before=ui.run(`state.files['index.html']`);
+  ui.click('.block-row[data-path="0.0"] .block-select');
+  assert.match(ui.doc.querySelector('[data-node-action="delete"]').textContent,/Удалить блок/);
+  ui.click('[data-delete-block="0.0"]');
+  assert.equal(ui.run(`parseHTML().querySelector('header')`),null);
+  assert.ok(ui.run(`parseHTML().querySelector('#interests')`));
+  assert.equal(ui.run('state.selectedPath'),'0');
+  assert.match(ui.doc.querySelector('#toast').textContent,/Блок удалён/);
+  ui.click('#undo-button');
+  assert.equal(ui.run(`state.files['index.html']`),before);
+  ui.click('[data-node-action="delete"]');
+  assert.equal(ui.run(`parseHTML().querySelector('header')`),null,'inspector delete uses the same operation');
+});
+
 test('100% congratulates; transition requires click and shows next theory',t=>{
   const ui=editor(t);ui.click('#theory-start');finishFirst(ui);
   assert.equal(ui.percent(),'100%');
