@@ -20,40 +20,26 @@ const INITIAL_HTML = `<!DOCTYPE html>
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Мой первый сайт</title>
+    <title>Моя страница</title>
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
     <main class="page">
       <header class="hero">
-        <span class="eyebrow">МОЯ МАЛЕНЬКАЯ СТРАНИЦА В ИНТЕРНЕТЕ</span>
-        <h1>Привет, я Саша.</h1>
-        <p class="intro">Люблю узнавать новое, придумывать интересное и делать по-своему. Здесь будет история обо мне.</p>
-        <a class="pill" href="#interests">Мой маленький мир ↓</a>
+        <h1>Привет, я …</h1>
+        <p class="intro">Напиши пару слов о себе или о придуманном герое.</p>
       </header>
-      <section id="interests" class="interests">
-        <h2>Что делает меня мной</h2>
-        <div class="cards">
-          <article class="card">
-            <span class="card-number">01 / ОБО МНЕ</span>
-            <h3>Увлечения</h3>
-            <p>Музыка, прогулки и хорошие истории. А какие увлечения у тебя?</p>
-          </article>
-        </div>
-      </section>
-      <figure class="photo-card">
-        <img class="photo" src="assets/mountains.jpg" alt="Горные вершины в вечернем свете">
-        <figcaption>Место, где хочется однажды побывать.</figcaption>
-      </figure>
-      <footer class="site-footer">Собрано мной из HTML и хороших идей.</footer>
+      <div id="about" class="about"></div>
+      <figure class="photo-zone"></figure>
+      <footer class="site-footer">Моя первая страница · HTML + CSS</footer>
     </main>
   </body>
 </html>`;
-const INITIAL_CSS = `/* Палитра страницы. Попробуй изменить эти цвета. */
+const INITIAL_CSS = `/* HTML отвечает за содержимое, CSS — за оформление. */
 body {
   --page-bg: #f8faf4;
   --ink: #263c30;
-  --muted: #849379;
+  --muted: #65765c;
   --accent: #dbeab8;
   --card-bg: #ecf2de;
   margin: 0;
@@ -64,49 +50,34 @@ body {
 }
 
 * { box-sizing: border-box; }
+.page { max-width: 760px; margin: 0 auto; padding: 40px 32px; }
+.hero { margin-bottom: 28px; }
+h1 { font-size: 46px; line-height: 1.15; letter-spacing: -1.5px; margin: 0 0 16px; }
+h2 { font-size: 24px; margin: 0 0 12px; }
+p { font-size: 16px; margin: 0 0 16px; }
+.intro { color: var(--muted); }
+.about { margin-bottom: 24px; }
 
-.page {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 46px 38px 24px;
-}
-
-.hero { margin-bottom: 42px; }
-.eyebrow { color: var(--muted); font-size: 10px; letter-spacing: 2px; }
-h1 { font-size: 54px; line-height: 1.1; letter-spacing: -2px; margin: 21px 0 18px; }
-.intro { color: var(--muted); font-size: 16px; max-width: 490px; }
-.pill { display: inline-block; background: var(--accent); padding: 10px 18px; border-radius: 30px; margin-top: 10px; font-size: 12px; text-decoration: none; color: var(--ink); }
-h2 { font-size: 25px; letter-spacing: -0.6px; margin: 0 0 20px; }
-h3 { font-size: 20px; line-height: 1.3; margin: 15px 0 10px; }
-p, li { font-size: 14px; }
-
-/* Включи Flexbox у этого контейнера в настройках. */
-.cards {
-  display: block;
-}
-
-.card {
+/* Картинка будет ребёнком этого контейнера.
+   Включи Flexbox и попробуй justify-content и align-items. */
+.photo-zone {
+  min-height: 320px;
+  margin: 0 0 24px;
+  padding: 16px;
   background: var(--card-bg);
-  padding: 26px;
   border-radius: 20px;
-  margin-bottom: 14px;
-  flex: 1 1 240px;
-  min-width: 0;
 }
-.card p { color: var(--muted); margin: 0; }
-.card-number { font-size: 9px; letter-spacing: 1.5px; color: var(--muted); }
-.interests { margin-bottom: 28px; }
-.photo-card { margin: 0 0 26px; }
-.photo { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 20px; }
-figcaption { color: var(--muted); font-size: 11px; margin-top: 10px; }
-.site-footer { border-top: 1px solid var(--accent); padding-top: 16px; color: var(--muted); font-size: 10px; }
+.photo-zone:empty::before { content: "Здесь будет твоя картинка"; color: var(--muted); font-size: 14px; }
+.photo { display: block; width: 180px; max-width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 16px; }
+.site-footer { border-top: 1px solid var(--accent); padding-top: 16px; color: var(--muted); font-size: 12px; }
 a { color: var(--ink); }
 ul { padding-left: 20px; }
+.card { padding: 20px; background: var(--card-bg); border-radius: 16px; }
 .action { background: var(--ink); color: var(--page-bg); padding: 12px 18px; border: 0; border-radius: 12px; cursor: pointer; }
-body.night { --page-bg: #24382d; --ink: #e6f2d9; --muted: #a4bb91; --accent: #50683b; --card-bg: #344b3a; }
+body.night { --page-bg: #24382d; --ink: #e6f2d9; --muted: #b7cba9; --accent: #50683b; --card-bg: #344b3a; }
 @media (max-width: 420px) {
-  .page { padding: 30px 22px; }
-  h1 { font-size: 38px; letter-spacing: -1.2px; }
+  .page { padding: 28px 20px; }
+  h1 { font-size: 34px; }
 }`;
 const INITIAL_JS = `// JavaScript задаёт поведение. Эта кнопка меняет тему.
 const button = document.querySelector('#theme-button');
@@ -118,23 +89,35 @@ const BLOCKS = [
   {key:'h2',tag:'h2',name:'Подзаголовок',html:'<h2>Мои интересы</h2>',hint:'h2 — заголовок отдельного раздела.'},
   {key:'p',tag:'p',name:'Текст',html:'<p>Несколько слов обо мне.</p>',hint:'p — абзац. Меняй содержимое в настройках справа.'},
   {key:'article',tag:'article',name:'Карточка',html:'<article class="card"><h3>Название карточки</h3><p>Напиши пару предложений о себе.</p></article>',hint:'Карточка объединяет заголовок и текст. Несколько карточек можно расположить через Flexbox.'},
+  {key:'section',tag:'section',name:'Раздел',html:'<section></section>',hint:'section — смысловой раздел. Добавь внутрь заголовок и текст.'},
   {key:'div',tag:'div',name:'Контейнер',html:'<div></div>',hint:'div объединяет блоки. Включи Flexbox у контейнера, чтобы расположить его прямых детей.'},
   {key:'ul',tag:'ul',name:'Список',html:'<ul><li>Музыка</li><li>Игры</li><li>Прогулки</li></ul>',hint:'ul — список; li — один пункт. В настройках впиши каждый пункт на новой строке.'},
-  {key:'img',tag:'img',name:'Картинка',html:'<img class="photo" src="assets/mountains.jpg" alt="Горные вершины">',hint:'img показывает картинку. Нажми, чтобы выбрать готовое фото; при перетаскивании добавятся горы.'},
-  {key:'a',tag:'a',name:'Ссылка',html:'<a class="pill" href="#interests">Мои интересы →</a>',hint:'a — ссылка. Адрес href может вести на раздел этой же страницы.'},
+  {key:'img',tag:'img',name:'Картинка',html:'<img class="photo" src="assets/mountains.jpg" alt="Горные вершины">',hint:'img — картинка. Выбери готовую, загрузи с компьютера или отправь с телефона по QR.'},
+  {key:'a',tag:'a',name:'Ссылка',html:'<a href="#about">Обо мне →</a>',hint:'a — ссылка. Адрес href может вести на раздел этой же страницы.'},
   {key:'button',tag:'button',name:'Кнопка',html:'<button type="button" class="action">Нажми меня</button>',hint:'button — кнопка. Её поведение задаёт JavaScript; готовый бонус есть через «+» в файлах.'}
 ];
 const CONTAINERS = new Set(['main','section','div','header','footer','article','nav','aside','form','figure']);
 const VOID_TAGS = new Set(['area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr']);
+const SEMANTICS = {
+  main:'main — главное содержимое страницы. Обычно он один.',
+  header:'header — вступление: имя, заголовок и знакомство.',
+  section:'section — смысловой раздел с собственным заголовком.',
+  footer:'footer — завершение страницы, например подпись автора.',
+  figure:'figure — изображение и, при желании, подпись к нему.',
+  div:'div — нейтральная коробка. Если у блока есть смысл, выбери подходящий тег.',
+  article:'article — самостоятельная история или карточка.',
+  nav:'nav — блок навигационных ссылок.',aside:'aside — дополнительное содержимое.'
+};
 const MISSIONS = [
-  {short:'О себе',category:'HTML',title:'Сделай страницу своей',time:'≈ 5 минут',description:'Замени имя в главном заголовке и напиши пару слов о себе.',hint:'Нажми на <code>&lt;h1&gt;</code> в структуре или включи выбор блока на сайте. Справа измени «Содержимое». Можно использовать выдуманное имя. Вкладка «Код» показывает настоящий HTML.',fail:'Измени главный заголовок h1: он пока остался таким же, как в заготовке.'},
-  {short:'Карточки',category:'HTML',title:'Собери «Что делает меня мной»',time:'≈ 9 минут',description:'«Увлечения» уже есть. Добавь ещё три карточки: «Планы», «Характер» и «Способности». В каждой напиши пару слов о себе.',hint:'Нажми «К нужному блоку»: выделится контейнер <code>.cards</code>. Перетащи в него блок «Карточка» три раза. Все четыре <code>&lt;article&gt;</code> должны лежать рядом внутри одного контейнера. В новых карточках выбери <code>&lt;h3&gt;</code> и задай заголовки «Планы», «Характер», «Способности»; затем измени текст <code>&lt;p&gt;</code>. Планы — чему хочешь научиться; характер — какой ты; способности — что у тебя хорошо получается. Можно придумать героя вместо рассказа о себе.',fail:'В контейнере .cards нужны четыре заполненные карточки: «Увлечения», «Планы», «Характер» и «Способности». Проверь заголовки и замени текст заготовок.'},
-  {short:'Flexbox',category:'CSS · РАСПОЛОЖЕНИЕ',title:'Расположи четыре карточки',time:'≈ 8 минут',description:'Включи Flexbox у .cards: ряд, расстояние 16–24 px и перенос. Расположи четыре карточки и проверь вид на телефоне.',hint:'Кнопка «К нужному блоку» выделит контейнер <code>.cards</code>. В настройках справа включи Flexbox. Попробуй «Колонка», затем «В ряд». <code>gap</code> — расстояние, <code>justify-content</code> — распределение по главной оси. Включи перенос и проверь режим «Телефон».',fail:'Сначала добавь четыре карточки в .cards. У этого контейнера включи Flexbox, ряд, расстояние 16–24 px и перенос wrap.'},
-  {short:'Стиль',category:'CSS · КЛАССЫ',title:'Придумай свой общий стиль',time:'≈ 6 минут',description:'Создай класс с фоном и отступами и назначь его двум карточкам.',hint:'Выбери карточку, нажми «+» у CSS-классов. Создай <code>my-card</code>, выбери фон и отступы. У второй карточки впиши то же имя рядом с <code>card</code>. Теперь правило в <code>style.css</code> оформляет обе карточки.',fail:'Создай свой CSS-класс и назначь его хотя бы двум элементам.'},
-  {short:'Фото',category:'КАРТИНКИ · СОХРАНЕНИЕ',title:'Добавь настроение и сохрани работу',time:'≈ 7 минут',description:'Выбери фото из библиотеки, подпиши его и нажми «Сохранить».',hint:'Выбери <code>&lt;img&gt;</code> и нажми «Выбрать картинку» справа. Затем добавь описание alt. Вверху назови проект и нажми «Сохранить». Через «Результат → Код проекта» можно скопировать работу и открыть её позже без загрузки файлов.',fail:'Выбери картинку из библиотеки и сохрани текущую версию кнопкой «Сохранить».'}
+  {short:'О себе',category:'HTML · СОДЕРЖИМОЕ',title:'Познакомь страницу с собой',time:'≈ 5 минут',description:'HTML описывает, что есть на странице. Измени имя в h1 и напиши 1–2 предложения в абзаце p.',hint:'Выбери <code>&lt;h1&gt;</code>, затем абзац <code>&lt;p&gt;</code> внутри <code>header</code>. Справа измени «Содержимое». Можно придумать героя. Переключись на «Код»: заголовок записан как <code>&lt;h1&gt;Имя&lt;/h1&gt;</code>.',fail:'Измени и главный заголовок h1, и текст знакомства внутри header.'},
+  {short:'Блоки',category:'ВЛОЖЕННОСТЬ · СЕМАНТИКА',title:'Собери раздел «Мои интересы»',time:'≈ 7 минут',description:'Выбери пустой div.about и замени его тег на section. Вложи внутрь подзаголовок h2 и абзац p о своём увлечении.',hint:'Нажми «К нужному блоку». В поле «Смысл блока · тег» выбери <code>section</code>. Перетащи «Подзаголовок» на этот контейнер: скобки <code>{ }</code> раскроются, показывая место внутри. Так же добавь «Текст» и измени его. Можно просто нажимать блоки в библиотеке: они добавляются внутрь выбранного контейнера. <code>header</code> — вступление, <code>main</code> — главное, <code>section</code> — раздел, <code>footer</code> — завершение.',fail:'Нужен section.about с заголовком h2 и своим текстом p внутри. В настройках div.about выбери тег section.'},
+  {short:'Фото',category:'HTML · IMG + CSS',title:'Вставь и измени картинку',time:'≈ 6 минут',description:'Добавь картинку внутрь figure.photo-zone. Задай описание alt и попробуй изменить ширину картинки ползунком.',hint:'Выбери <code>figure.photo-zone</code> и нажми «Картинка». Доступны библиотека, загрузка с компьютера и QR для телефона. После вставки выбери <code>img</code>, напиши, что на фото, и измени «Ширина картинки». Это свойство <code>width</code> в CSS. Картинка должна оказаться внутри скобок figure.',fail:'Добавь img внутрь figure.photo-zone, заполни alt и измени ширину: начальное значение — 180 px.'},
+  {short:'Flex',category:'CSS · FLEXBOX',title:'Найди место для своей картинки',time:'≈ 8 минут',description:'Включи Flexbox у figure. Попробуй центр, левый и нижний край. Меняй justify-content и align-items, затем оставь понравившийся вариант.',hint:'Выбери родителя картинки — <code>figure</code>. Для ряда <code>justify-content</code> двигает по горизонтали, <code>align-items</code> — по вертикали. Для колонки оси меняются местами. Центр: оба значения <code>center</code>. Слева по центру: <code>flex-start</code> и <code>center</code>. Снизу по центру: <code>center</code> и <code>flex-end</code>. Попробуй оба выпадающих списка; готовые позиции помогут сравнить результат.',fail:'Включи Flexbox у контейнера с картинкой и попробуй оба свойства: justify-content и align-items.'},
+  {short:'Класс',category:'CSS · КЛАССЫ',title:'Создай собственный стиль',time:'≈ 6 минут',description:'CSS задаёт оформление. Выбери раздел о себе, создай класс my-style, задай фон и внутренний отступ padding. Найди class="my-style" в HTML и .my-style в CSS.',hint:'У <code>section.about</code> нажми «+» рядом с CSS-классами. Назови класс <code>my-style</code> без точки, выбери фон и отступ, оставь «Назначить выбранному блоку». В HTML получится <code>class="about my-style"</code>, в CSS — <code>.my-style { … }</code>. Выключи и включи CSS над предпросмотром: содержимое остаётся, оформление меняется.',fail:'Создай свой класс с фоном и отступом и назначь его хотя бы одному блоку страницы.'},
+  {short:'Готово',category:'РЕЗУЛЬТАТ · 35 МИНУТ',title:'Сохрани свою первую страницу',time:'≈ 3 минуты',description:'Проверь страницу на телефоне, назови проект и нажми «Сохранить». Открой результат и забери код проекта.',hint:'В режиме «Телефон» проверь текст и картинку. Кнопка «Сохранить» создаёт контрольную версию. «Результат → Код проекта» позволяет перенести страницу, включая загруженное фото. Ты собрал HTML-структуру, выбрал смысловые теги, настроил CSS-класс и расположил картинку через Flexbox.',fail:'Добавь текст и картинку, затем сохрани текущую версию кнопкой «Сохранить».'}
 ];
 function newId(){return crypto.randomUUID?.() || Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);}
-function freshState(){return {name:'Мой первый сайт',files:{'index.html':INITIAL_HTML,'style.css':INITIAL_CSS},currentFile:'index.html',mode:'blocks',selectedPath:'0.0.1',selectedClass:null,createdClasses:[],flexTouched:[],imagesChosen:[],lastManualFingerprint:null,theme:'fresh',device:'desktop',mission:0};}
+function freshState(){return {name:'Мой первый сайт',files:{'index.html':INITIAL_HTML,'style.css':INITIAL_CSS},currentFile:'index.html',mode:'blocks',selectedPath:'0.0.0',selectedClass:null,createdClasses:[],flexTouched:[],imagesChosen:[],lastManualFingerprint:null,theme:'fresh',device:'desktop',mission:0};}
 function clone(value){return JSON.parse(JSON.stringify(value));}
 function hydrate(value){
   const clean=freshState(); if(!value || typeof value!=='object') return clean;
@@ -142,7 +125,7 @@ function hydrate(value){
   for(const field of ['name','currentFile','mode','selectedPath','selectedClass','lastManualFingerprint','theme','device']) if(typeof value[field]==='string') clean[field]=value[field];
   clean.name=clean.name.slice(0,60)||'Мой сайт';
   for(const field of ['createdClasses','flexTouched','imagesChosen']) if(Array.isArray(value[field])) clean[field]=value[field].filter(v=>typeof v==='string').slice(0,100);
-  clean.mission=Math.max(0,Math.min(4,Number(value.mission)||0));
+  clean.mission=Math.max(0,Math.min(MISSIONS.length-1,Number(value.mission)||0));
   if(!(clean.currentFile in clean.files)) clean.currentFile='index.html';
   if(!THEMES[clean.theme]) clean.theme='fresh';
   if(!['desktop','phone'].includes(clean.device)) clean.device='desktop';
@@ -152,9 +135,13 @@ function hydrate(value){
 function readLibrary(){
   try {const saved=JSON.parse(localStorage.getItem(BOOK_KEY)||'null'); if(saved?.projects && typeof saved.projects==='object') {
     const projects={}; for(const [id,entry] of Object.entries(saved.projects).slice(0,50)) if(/^[\w-]{6,70}$/.test(id)&&!['__proto__','constructor','prototype'].includes(id)&&entry?.state?.files) projects[id]={id,name:String(entry.name||'Мой сайт').slice(0,60),createdAt:Number(entry.createdAt)||Date.now(),updatedAt:Number(entry.updatedAt)||Date.now(),state:hydrate(entry.state),versions:Array.isArray(entry.versions)?entry.versions.slice(0,6).filter(v=>v?.state?.files).map(v=>({...v,state:hydrate(v.state)})):[]};
-    const ids=Object.keys(projects); if(ids.length) return {version:1,activeId:projects[saved.activeId]?saved.activeId:ids[0],projects};
+    const ids=Object.keys(projects); if(ids.length) {
+      let activeId=projects[saved.activeId]?saved.activeId:ids[0];
+      if(saved.lessonVersion!==2){const id=newId(),initial=freshState();initial.name='О себе · вводный урок';projects[id]={id,name:initial.name,createdAt:Date.now(),updatedAt:Date.now(),state:initial,versions:[]};activeId=id;}
+      return {version:1,lessonVersion:2,activeId,projects};
+    }
   }} catch(_) {}
-  const id=newId(), book={version:1,activeId:id,projects:{}}; let initial=freshState();
+  const id=newId(), book={version:1,lessonVersion:2,activeId:id,projects:{}}; let initial=freshState();
   try {const legacy=JSON.parse(localStorage.getItem('web-workshop-v2')||localStorage.getItem('web-workshop-v1')||'null'); if(legacy?.files){
     const untouched=legacy.files['index.html']?.includes('Привет, я Саша')&&!legacy.files['index.html']?.includes('<ul>')&&!legacy.files['style.css']?.includes('Мой CSS-класс');
     if(!untouched) {initial=hydrate(legacy);initial.name='Моя прежняя работа';initial.mission=0;}
@@ -173,6 +160,9 @@ let dragPayload=null,pointerDrag=null,suppressClickUntil=0;
 let lessonCompleteAnnounced=false;
 let imageTargetPath=null,galleryFilter='Все';
 let transferMode='export',transferBusy=false;
+const collapsedNodes=new Set(),expandedEmptyNodes=new Set();
+let photoSession=null,photoPollTimer=null,photoGeneration=0;
+let uploadBusy=false;
 
 function escapeHTML(text) { return String(text).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
 function parseHTML(html = state.files['index.html']) { return new DOMParser().parseFromString(html, 'text/html'); }
@@ -217,7 +207,7 @@ function saveProject(){
   toast(saved?'Сохранено: «'+state.name+'». Можно закрыть страницу и вернуться позже.':'Память браузера заполнена. Скопируй переносимый код проекта.');
 }
 function renderProjectHeader(){$('#project-title').value=state.name;document.querySelectorAll('[data-theme]').forEach(el=>el.classList.toggle('active',el.dataset.theme===state.theme));document.querySelectorAll('[data-device]').forEach(el=>{const active=el.dataset.device===state.device;el.classList.toggle('active',active);el.setAttribute('aria-pressed',String(active));});}
-function resetView(){history=[];cssEnabled=true;inspectMode=false;previewScroll=0;state.selectedClass=null;$('#css-toggle').checked=true;$('#inspect-toggle').checked=false;$('#css-toggle').nextElementSibling.textContent='CSS включён';lessonCompleteAnnounced=false;renderProjectHeader();renderEditor();updatePreview();updateMissions();}
+function resetView(){collapsedNodes.clear();expandedEmptyNodes.clear();stopPhoneUpload();history=[];cssEnabled=true;inspectMode=false;previewScroll=0;state.selectedClass=null;$('#css-toggle').checked=true;$('#inspect-toggle').checked=false;$('#css-toggle').nextElementSibling.textContent='CSS включён';lessonCompleteAnnounced=false;renderProjectHeader();renderEditor();updatePreview();updateMissions();}
 function createProject(){flushSource();persistState();const id=newId();state=freshState();state.name=Object.keys(library.projects).length?'Мой сайт '+(Object.keys(library.projects).length+1):'Мой первый сайт';library.activeId=id;library.projects[id]={id,name:state.name,createdAt:Date.now(),updatedAt:Date.now(),state:clone(state),versions:[]};$('#projects-dialog').close();resetView();persistState();toast('Новый проект создан. Предыдущая работа осталась в «Мои проекты».');}
 function openProject(id){if(!library.projects[id])return;flushSource();persistState();library.activeId=id;state=hydrate(library.projects[id].state);$('#projects-dialog').close();resetView();persistState();toast('Открыт проект «'+state.name+'».');}
 function restoreVersion(id,index){const project=library.projects[id],version=project?.versions[index];if(!version)return;flushSource();persistState();if(fingerprint(project.state)!==version.fingerprint){project.versions.unshift({time:Date.now(),fingerprint:fingerprint(project.state),state:clone(project.state)});project.versions=project.versions.slice(0,6);}library.activeId=id;state=hydrate(version.state);$('#projects-dialog').close();resetView();persistState();toast('Контрольная версия восстановлена. Текущая работа также сохранена.');}
@@ -234,7 +224,7 @@ function mutateHTML(mutator, { select = null, announce = null } = {}) {
   const doc = parseHTML();
   const result = mutator(doc);
   state.files['index.html'] = serializeHTML(doc);
-  if (result instanceof Element) state.selectedPath = nodePath(result, doc.body);
+  if (result instanceof Element) {state.selectedPath=nodePath(result,doc.body);revealPath(state.selectedPath);}
   else if (select !== null) state.selectedPath = select;
   if(announce || result?.tagName==='IMG') pendingPreviewFocus=state.selectedPath;
   renderEditor(); updatePreview(); updateMissions(); saveDraft();
@@ -272,16 +262,26 @@ function renderEditor() {
 function renderTree(properties = true) {
   const doc = parseHTML();
   function row(node, path, depth) {
-    const tag = node.tagName.toLowerCase();
-    const container = CONTAINERS.has(tag);
-    const summary = container ? ({ main: 'Содержимое страницы', header: 'Вступление', section: 'Раздел', div: node.classList.contains('cards')?'Карточки':'Контейнер', article: node.querySelector('h3')?.textContent||'Карточка', figure:'Фото и подпись', footer:'Подвал' }[tag] || 'Контейнер') : node.textContent.trim() || node.getAttribute('alt') || node.getAttribute('src') || 'Пустой элемент';
-    const selected = path === state.selectedPath;
-    const className = node.getAttribute('class') || '';
-    const children = container ? [...node.children].map((child, index) => row(child, `${path}.${index}`, depth + 1)).join('') : '';
-    return `<div class="drop-line" style="--depth:${depth}" data-drop="before" data-path="${path}" aria-hidden="true"></div><div class="tree-node" style="--depth:${depth}"><div class="block-row ${selected ? 'selected' : ''} ${depth === 0 ? 'node-root' : ''}" draggable="true" data-path="${path}" data-container="${container}" tabindex="0" role="button" aria-label="${escapeHTML(tag + ': ' + summary.slice(0, 70))}" aria-pressed="${selected}"><span class="drag-handle" aria-hidden="true">⠿</span><span class="tag-name ${container ? 'container' : ''}">&lt;${tag}&gt;</span><span class="node-summary">${escapeHTML(summary)}</span>${className ? `<span class="node-class">.${escapeHTML(className.split(/\s+/).join(' .'))}</span>` : ''}</div></div>${children}${container && !node.children.length ? `<div class="empty-container" style="margin-left:${(depth + 1) * 14}px" data-drop="inside" data-path="${path}">Перетащи блок внутрь ${tag}</div>` : ''}<div class="drop-line" style="--depth:${depth}" data-drop="after" data-path="${path}" aria-hidden="true"></div>`;
+    const tag=node.tagName.toLowerCase(),container=CONTAINERS.has(tag),selected=path===state.selectedPath;
+    const summary=container?({main:'Вся страница',header:'Знакомство',section:'Раздел обо мне',div:'Нейтральный контейнер',figure:'Место для картинки',footer:'Подпись автора',article:'Карточка'}[tag]||'Контейнер'):node.textContent.trim()||node.getAttribute('alt')||'Пустой элемент';
+    const className=node.getAttribute('class')||'';
+    const textNodes=[...node.childNodes].filter(child=>child.nodeType===3&&child.textContent.trim());
+    const itemCount=node.children.length+textNodes.length;
+    const children=container?[...node.childNodes].map(child=>child.nodeType===1?row(child,nodePath(child,doc.body),depth+1):child.nodeType===3&&child.textContent.trim()?`<div class="direct-text">${escapeHTML(child.textContent.trim())}</div>`:'').join(''):'';
+    const collapsed=container&&(collapsedNodes.has(path)||(!node.children.length&&!expandedEmptyNodes.has(path)));
+    return `<div class="tree-node ${container?'container-node':''} ${itemCount===0?'empty-node':''} ${collapsed?'scope-collapsed':''}" data-node-path="${path}" style="--level:${depth%4}"><div class="drop-line" data-drop="before" data-path="${path}"></div><div class="block-heading">${container?`<button class="fold-button" data-fold="${path}" aria-expanded="${!collapsed}" aria-label="${collapsed?'Раскрыть':'Свернуть'} ${tag}">${collapsed?'›':'⌄'}</button>`:'<span class="leaf-mark">·</span>'}<div class="block-row ${selected?'selected':''}" draggable="true" data-path="${path}" data-container="${container}" tabindex="0" role="button" aria-label="${escapeHTML(tag+': '+summary.slice(0,70))}" aria-pressed="${selected}"><span class="tag-name ${container?'container':''}">&lt;${tag}&gt;</span><span class="node-summary">${escapeHTML(summary)}</span>${className?`<span class="node-class">.${escapeHTML(className.split(/\s+/).join(' .'))}</span>`:''}${container?'<span class="scope-inline" aria-hidden="true">{ }</span>':''}</div></div>${container?`<div class="scope-content"><div class="scope-open" data-drop="inside" data-path="${path}" aria-hidden="true">{ <small>${itemCount?'ВНУТРИ · '+itemCount:'ПУСТОЙ КОНТЕЙНЕР'}</small></div><div class="scope-body" data-drop="inside" data-path="${path}">${children}<div class="nesting-drop" data-drop="inside" data-path="${path}">+ Вложить в &lt;${tag}&gt;</div></div><div class="scope-close" data-drop="inside" data-path="${path}"><b>}</b><span>&lt;/${tag}&gt;</span></div></div>`:''}<div class="drop-line" data-drop="after" data-path="${path}"></div></div>`;
   }
-  $('#block-tree').innerHTML = [...doc.body.children].filter((node) => node.tagName !== 'SCRIPT').map((node) => row(node, nodePath(node, doc.body), 0)).join('');
-  if (properties) renderProperties(doc);
+  $('#block-tree').innerHTML=[...doc.body.children].filter(node=>node.tagName!=='SCRIPT').map(node=>row(node,nodePath(node,doc.body),0)).join('');
+  if(properties)renderProperties(doc);
+}
+function revealPath(path){
+  const parts=path.split('.');
+  for(let i=1;i<=parts.length;i++)collapsedNodes.delete(parts.slice(0,i).join('.'));
+}
+function computedBlockStyle(node){
+  const style=document.createElement('div').style;
+  for(const name of validClasses(node)) for(const property of classStyle(name)) style.setProperty(property,classStyle(name).getPropertyValue(property));
+  return style;
 }
 function findClasses() { return [...new Set([...state.files['style.css'].matchAll(/\.([A-Za-z_][\w-]*)\s*\{/g)].map((m) => m[1]))]; }
 function classPattern(name){return new RegExp('(^|\\n)[ \\t]*\\.'+name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\s*\\{([^}]*?)\\}');}
@@ -295,19 +295,24 @@ function selectControl(id,property,title,value,options){return `<label>${title}<
 function renderProperties(doc=parseHTML()){
   const node=resolvePath(doc,state.selectedPath);
   if(!node){$('#element-properties').innerHTML='<p class="property-help">Выбери блок в структуре или прямо в предпросмотре.</p>';return;}
-  const tag=node.tagName.toLowerCase(),container=CONTAINERS.has(tag),isList=['ul','ol'].includes(tag),editable=(!container||!node.children.length)&&!VOID_TAGS.has(tag);
+  const tag=node.tagName.toLowerCase(),container=CONTAINERS.has(tag),isList=['ul','ol'].includes(tag),editable=(!container||(!node.children.length&&Boolean(node.textContent.trim())))&&!VOID_TAGS.has(tag);
   const value=isList?[...node.children].map(li=>li.textContent).join('\n'):node.textContent;
   let fields=editable?`<label>${isList?'Пункты · один на строку':'Содержимое'}${isList||value.length>80?`<textarea id="property-text" rows="3">${escapeHTML(value)}</textarea>`:`<input id="property-text" value="${escapeHTML(value)}">`}</label>`:'';
+  if(container)fields+=`<label>Смысл блока · тег<select id="semantic-tag">${Object.keys(SEMANTICS).map(t=>`<option value="${t}" ${t===tag?'selected':''}>${t} — ${({main:'главное',header:'вступление',section:'раздел',footer:'завершение',figure:'картинка',div:'нейтральный блок',article:'история',nav:'навигация',aside:'дополнение'})[t]}</option>`).join('')}</select></label><p class="semantic-note">${escapeHTML(SEMANTICS[tag]||'Контейнер объединяет вложенные блоки.')}</p>`;
   if(tag==='a')fields+=`<label>Адрес ссылки · href<input id="property-href" value="${escapeHTML(node.getAttribute('href')||'')}"></label>`;
   if(tag==='img')fields+=`<img class="image-property-thumb" src="${escapeHTML(node.getAttribute('src')||'')}" alt="Текущая картинка"><button id="property-image" class="image-choose-button">Выбрать картинку ↗</button><label>Описание · alt<input id="property-alt" value="${escapeHTML(node.getAttribute('alt')||'')}" placeholder="Что изображено?"></label><span class="image-credit">Описание помогает, когда картинка недоступна.</span>`;
-  fields+=`<label>CSS-классы<div class="class-field-row"><input id="property-class" value="${escapeHTML(node.getAttribute('class')||'')}" list="class-list" placeholder="например, card my-card"><button id="property-new-class" aria-label="Создать CSS-класс" title="Создать общий класс">+</button></div><datalist id="class-list">${findClasses().map(name=>`<option value="${escapeHTML(name)}"></option>`).join('')}</datalist></label>`;
+  if(tag==='img'){const imageStyle=computedBlockStyle(node);fields+=slider('width','Ширина картинки',parseInt(imageStyle.width)||180,60,420);}
+  fields+=`<label>CSS-классы<div class="class-field-row"><input id="property-class" value="${escapeHTML(node.getAttribute('class')||'')}" list="class-list" placeholder="например, about my-style"><button id="property-new-class" aria-label="Создать CSS-класс" title="Создать общий класс">+</button></div><datalist id="class-list">${findClasses().map(name=>`<option value="${escapeHTML(name)}"></option>`).join('')}</datalist></label>`;
+  const parents=[...doc.body.querySelectorAll('*')].filter(el=>CONTAINERS.has(el.tagName.toLowerCase())&&el!==node&&!node.contains(el));
+  fields+=`<label>Вложить в контейнер<select id="parent-container"><option value="" ${node.parentElement===doc.body?'selected':''}>body — корень страницы</option>${parents.map(el=>{const path=nodePath(el,doc.body);return `<option value="${path}" ${el===node.parentElement?'selected':''}>${'· '.repeat(path.split('.').length-1)}${el.tagName.toLowerCase()}${el.className?'.'+el.className.trim().split(/\s+/).join('.'):''}</option>`;}).join('')}</select></label>`;
   const theme=THEMES[state.theme],name=activeClass(node),names=validClasses(node),style=name?classStyle(name):document.createElement('div').style;
-  const font=parseInt(style.fontSize)||({h1:54,h2:25,h3:20,span:12}[tag]||16),padding=parseInt(style.padding)||0,radius=parseInt(style.borderRadius)||0;
+  const font=parseInt(style.fontSize)||({h1:46,h2:24,h3:20,span:12}[tag]||16),padding=parseInt(style.padding)||0,radius=parseInt(style.borderRadius)||0;
   const color=hexColor(style.color,theme.ink),background=hexColor(style.backgroundColor,theme.card);
-  const styleFields=`<details class="inspector-section" ${container&&state.mission!==3?'':'open'}><summary>Оформление</summary><div class="style-fields"><label>Какой класс изменяем<select id="style-rule-target"><option value="">Отдельный стиль блока</option>${names.map(n=>`<option value="${n}" ${n===name?'selected':''}>.${n}</option>`).join('')}</select></label><div id="style-target-note" class="style-target-note">${name?'Правило .'+escapeHTML(name)+' действует на все блоки с этим классом.':'При изменении появится отдельный класс в style.css.'}</div><div class="field-pair"><label>Текст<div class="color-control"><input type="color" value="${color}" data-style="color" aria-label="Цвет текста"><span>${color}</span></div></label><label>Фон<div class="color-control"><input type="color" value="${background}" data-style="background" aria-label="Цвет фона"><span>${style.backgroundColor==='transparent'?'нет':background}</span></div></label></div>${slider('font-size','Размер текста',font,10,72)}${slider('padding','Внутренний отступ',padding,0,64)}${slider('border-radius','Скругление',radius,0,40)}${selectControl('text-align-control','text-align','Текст',style.textAlign||'left',[['left','Слева'],['center','По центру'],['right','Справа']])}${tag==='img'?selectControl('image-ratio-control','aspect-ratio','Формат картинки',style.aspectRatio||'16 / 9',[['16 / 9','Широкая · 16:9'],['1 / 1','Квадрат · 1:1'],['3 / 4','Портрет · 3:4']]):''}</div></details>`;
-  const flexOn=style.display==='flex',direction=style.flexDirection||'row',gap=parseInt(style.gap)||16,justify=style.justifyContent||'flex-start',align=style.alignItems||'stretch';
-  const flexFields=container?`<details class="inspector-section" open><summary>Flexbox · расположение</summary><div class="flex-fields"><label class="checkbox-field"><input id="property-flex-enabled" type="checkbox" ${flexOn?'checked':''}> Включить Flexbox</label><div class="direction-buttons"><button data-direction="row" class="${flexOn&&direction==='row'?'active':''}">↔ В ряд</button><button data-direction="column" class="${flexOn&&direction==='column'?'active':''}">↕ Колонка</button></div><div class="flex-demo" style="flex-direction:${direction};justify-content:${justify};align-items:${align}"><span>1</span><span>2</span><span>3</span></div><p class="property-help">Расположение прямых дочерних блоков. Сейчас их ${node.children.length}.</p>${slider('gap','Расстояние между блоками',gap,0,48)}${selectControl('justify-control','justify-content','По главной оси',justify,[['flex-start','В начале'],['center','По центру'],['space-between','Между краями'],['space-evenly','Равномерно'],['flex-end','В конце']])}${selectControl('align-control','align-items','По поперечной оси',align,[['stretch','Растянуть'],['flex-start','В начале'],['center','По центру'],['flex-end','В конце']])}<label class="checkbox-field"><input id="property-flex-wrap" type="checkbox" ${style.flexWrap==='wrap'?'checked':''}> Перенос на новую строку · wrap</label></div></details>`:`<details class="inspector-section" open><summary>Flexbox</summary><div class="flex-empty">Flexbox включается у контейнера и располагает его детей.<button id="jump-to-flex">Выбрать контейнер карточек →</button></div></details>`;
-  $('#element-properties').innerHTML=`<div class="property-heading"><b>&lt;${tag}&gt;</b><div class="node-actions"><button data-node-action="up" aria-label="Переместить элемент выше">↑</button><button data-node-action="down" aria-label="Переместить элемент ниже">↓</button><button data-node-action="duplicate" aria-label="Дублировать элемент">⧉</button><button data-node-action="delete" aria-label="Удалить элемент">×</button></div></div><div class="property-fields">${fields}</div>${styleFields}${flexFields}<p class="property-help">${escapeHTML(BLOCKS.find(b=>b.key===tag)?.hint||(container?'Вложи блоки в контейнер, затем настрой его расположение.':'Оформление элемента задаётся CSS.'))}</p>`;
+  const styleFields=`<details class="inspector-section" ${container&&state.mission!==4?'':'open'}><summary>Оформление</summary><div class="style-fields"><div class="box-model" aria-label="Блочная модель"><span>margin · снаружи</span><div><span>border · граница</span><div><span>padding · внутри</span><b>Содержимое &lt;${tag}&gt;</b></div></div></div><label>Какой класс изменяем<select id="style-rule-target"><option value="">Отдельный стиль блока</option>${names.map(n=>`<option value="${n}" ${n===name?'selected':''}>.${n}</option>`).join('')}</select></label><div id="style-target-note" class="style-target-note">${name?'Правило .'+escapeHTML(name)+' действует на все блоки с этим классом.':'При изменении появится отдельный класс в style.css.'}</div><div class="field-pair"><label>Текст<div class="color-control"><input type="color" value="${color}" data-style="color" aria-label="Цвет текста"><span>${color}</span></div></label><label>Фон<div class="color-control"><input type="color" value="${background}" data-style="background" aria-label="Цвет фона"><span>${style.backgroundColor==='transparent'?'нет':background}</span></div></label></div>${slider('font-size','Размер текста',font,10,72)}${slider('padding','Внутренний отступ',padding,0,64)}${slider('border-radius','Скругление',radius,0,40)}${selectControl('text-align-control','text-align','Текст',style.textAlign||'left',[['left','Слева'],['center','По центру'],['right','Справа']])}${tag==='img'?selectControl('image-ratio-control','aspect-ratio','Формат картинки',style.aspectRatio||'16 / 9',[['16 / 9','Широкая · 16:9'],['1 / 1','Квадрат · 1:1'],['3 / 4','Портрет · 3:4']]):''}</div></details>`;
+  const flexOn=style.display==='flex',direction=style.flexDirection||'row',gap=Number.parseInt(style.gap)||0,justify=style.justifyContent||'flex-start',align=style.alignItems||'stretch';
+  const flexFields=container?`<details class="inspector-section" open><summary>Flexbox · расположение</summary><div class="flex-fields"><label class="checkbox-field"><input id="property-flex-enabled" type="checkbox" ${flexOn?'checked':''}> Включить Flexbox</label><div class="direction-buttons"><button data-direction="row" class="${flexOn&&direction==='row'?'active':''}">↔ В ряд</button><button data-direction="column" class="${flexOn&&direction==='column'?'active':''}">↕ Колонка</button></div><div class="flex-demo ${flexOn?'':'flex-off'}" style="display:${flexOn?'flex':'block'};flex-direction:${direction};justify-content:${justify};align-items:${align}"><span>1</span><span>2</span><span>3</span></div><p class="property-help">Расположение прямых дочерних блоков. Сейчас их ${node.children.length}.</p>${slider('gap','Расстояние между блоками',gap,0,48)}<p class="axis-note">${direction==='row'?'↔ Главная ось — горизонталь<br>↕ Поперечная — вертикаль':'↕ Главная ось — вертикаль<br>↔ Поперечная — горизонталь'}</p>${selectControl('justify-control','justify-content','justify-content · '+(direction==='row'?'↔ горизонталь':'↕ вертикаль'),justify,[['flex-start','В начале'],['center','По центру'],['space-between','Между краями'],['space-evenly','Равномерно'],['flex-end','В конце']])}${selectControl('align-control','align-items','align-items · '+(direction==='row'?'↕ вертикаль':'↔ горизонталь'),align,[['stretch','Растянуть'],['flex-start','В начале'],['center','По центру'],['flex-end','В конце']])}<div class="position-presets"><span>Попробуй положение</span><button data-position="center">⊙ Центр</button><button data-position="left">⇤ Слева</button><button data-position="bottom">↓ Снизу</button></div><label class="checkbox-field"><input id="property-flex-wrap" type="checkbox" ${style.flexWrap==='wrap'?'checked':''}> Перенос на новую строку · wrap</label></div></details>`:`<details class="inspector-section" open><summary>Flexbox</summary><div class="flex-empty">Flexbox включается у контейнера и располагает его детей.<button id="jump-to-flex">Выбрать родителя картинки →</button></div></details>`;
+  const trail=[];let ancestor=node;while(ancestor&&ancestor!==doc.body){trail.unshift(`<button data-select-path="${nodePath(ancestor,doc.body)}">${ancestor.tagName.toLowerCase()}</button>`);ancestor=ancestor.parentElement;}
+  $('#element-properties').innerHTML=`<nav class="nesting-trail" aria-label="Вложенность выбранного блока">${trail.join('<span>›</span>')}</nav><div class="property-heading"><b>&lt;${tag}&gt;</b><div class="node-actions"><button data-node-action="up" aria-label="Переместить элемент выше">↑</button><button data-node-action="down" aria-label="Переместить элемент ниже">↓</button><button data-node-action="duplicate" aria-label="Дублировать элемент">⧉</button><button data-node-action="delete" aria-label="Удалить элемент">×</button></div></div>${container&&state.mission===3?flexFields:''}<div class="property-fields">${fields}<p class="class-explainer">HTML: <code>class="${escapeHTML(names.join(' ')||'my-style')}"</code><br>CSS: <code>.${escapeHTML(name||'my-style')} { … }</code></p></div>${styleFields}${container&&state.mission===3?'':flexFields}<p class="property-help">${escapeHTML(BLOCKS.find(b=>b.key===tag)?.hint||(container?'Вложи блоки в контейнер, затем настрой его расположение.':'Оформление элемента задаётся CSS.'))}</p>`;
 }
 function putClassStyle(name,style){
   const rule='.'+name+' {\n'+[...style].map(property=>'  '+property+': '+style.getPropertyValue(property)+';').join('\n')+'\n}';
@@ -327,13 +332,79 @@ function applyStyles(changes,live=false){
   else {renderEditor();updatePreview();}
   updateMissions();saveDraft();
 }
-function selectPath(path){state.selectedPath=path;state.selectedClass=null;state.currentFile='index.html';state.mode='blocks';renderEditor();const row=$('.block-row[data-path="'+path+'"]');row?.scrollIntoView({block:'nearest',behavior:'smooth'});saveDraft();}
-function jumpToFlex(){const doc=parseHTML();let node=doc.querySelector('.cards')||[...doc.body.querySelectorAll('div,section,article')].find(n=>n.children.length>=2);if(node)selectPath(nodePath(node,doc.body));else toast('Добавь контейнер и вложи в него два блока.');}
-function missionAction(){if(state.mission===0){const doc=parseHTML(),node=doc.querySelector('h1');if(node)selectPath(nodePath(node,doc.body));}else if(state.mission===1||state.mission===2)jumpToFlex();else if(state.mission===3){const doc=parseHTML(),node=doc.querySelector('article,.card');if(node)selectPath(nodePath(node,doc.body));}else if(state.mission===4)openGallery();}
+function selectPath(path){revealPath(path);state.selectedPath=path;state.selectedClass=null;state.currentFile='index.html';state.mode='blocks';renderEditor();const row=$('.block-row[data-path="'+path+'"]');row?.scrollIntoView({block:'nearest',behavior:'smooth'});saveDraft();}
+function jumpToFlex(){const doc=parseHTML();const selected=resolvePath(doc,state.selectedPath);let node=selected?.tagName==='IMG'?selected.parentElement:doc.querySelector('.photo-zone')||doc.querySelector('img')?.parentElement||doc.querySelector('.cards');if(node)selectPath(nodePath(node,doc.body));else toast('Добавь контейнер и вложи в него два блока.');}
+function missionAction(){
+  const doc=parseHTML();let node;
+  if(state.mission===0)node=doc.querySelector('h1');
+  if(state.mission===1||state.mission===4)node=doc.querySelector('#about,.about,section');
+  if(state.mission===2)node=doc.querySelector('.photo-zone img')||doc.querySelector('.photo-zone,figure');
+  if(state.mission===3){jumpToFlex();return;}
+  if(state.mission===5){$('#project-title').focus();return;}
+  if(node)selectPath(nodePath(node,doc.body));
+}
 function applyTheme(key){if(!THEMES[key])return;flushSource();checkpoint();state.theme=key;const theme=THEMES[key],pattern=/(body\s*\{)([^}]*)(\})/;state.files['style.css']=state.files['style.css'].replace(pattern,(_,open,body,close)=>{for(const [name,value]of Object.entries({'--page-bg':theme.background,'--ink':theme.ink,'--muted':theme.muted,'--accent':theme.accent,'--card-bg':theme.card})){const prop=new RegExp(name+':[^;]*;');body=prop.test(body)?body.replace(prop,name+': '+value+';'):'\n  '+name+': '+value+';'+body;}return open+body+close;});renderProjectHeader();renderEditor();updatePreview();updateMissions();saveDraft();}
-function openGallery(){flushSource();imageTargetPath=state.selectedPath;galleryFilter='Все';renderGallery();$('#gallery-dialog').showModal();}
+function openGallery(){flushSource();stopPhoneUpload();imageTargetPath=state.selectedPath;galleryFilter='Все';$('#image-upload-status').textContent='';renderGallery();$('#gallery-dialog').showModal();}
 function renderGallery(){$('#gallery-filters').innerHTML=['Все','Природа','Космос','Увлечения'].map(category=>`<button data-gallery-filter="${category}" class="${category===galleryFilter?'active':''}">${category}</button>`).join('');$('#gallery-grid').innerHTML=IMAGES.filter(image=>galleryFilter==='Все'||image.category===galleryFilter).map(image=>`<button class="gallery-item" data-image="${image.id}"><img src="${image.file}" alt="${image.alt}"><span>${image.title}<small>Добавить ↗</small></span></button>`).join('');}
-function chooseImage(id){const image=IMAGES.find(item=>item.id===id);if(!image)return;mutateHTML(doc=>{let node=resolvePath(doc,imageTargetPath);if(node?.tagName!=='IMG'){node=doc.createElement('img');node.className='photo';placeNode(doc,node,null,'append');}node.src=image.file;node.alt=image.alt;if(!state.imagesChosen.includes(id))state.imagesChosen.push(id);return node;});$('#gallery-dialog').close();toast('Фото добавлено. В настройках можно изменить описание и формат.');}
+function installImage(source,alt,id){
+  mutateHTML(doc=>{
+    let node=resolvePath(doc,imageTargetPath);
+    if(node?.tagName!=='IMG'){
+      const selected=node;node=doc.createElement('img');node.className='photo';
+      if(selected&&CONTAINERS.has(selected.tagName.toLowerCase()))selected.append(node);
+      else (doc.querySelector('.photo-zone')||defaultContainer(doc)).append(node);
+    }
+    node.setAttribute('src',source);node.alt=alt;
+    if(!state.imagesChosen.includes(id))state.imagesChosen.push(id);
+    return node;
+  });
+  $('#gallery-dialog').close();toast('Картинка внутри блока. Попробуй изменить её ширину и положение.');
+}
+function chooseImage(id){const image=IMAGES.find(item=>item.id===id);if(image)installImage(image.file,image.alt,id);}
+async function chooseLocalImage(file){
+  if(!file||uploadBusy)return;uploadBusy=true;
+  const projectId=library.activeId;$('#image-upload-status').textContent='Подготавливаем фото…';
+  try{const image=await WorkshopPhoto.prepare(file);if(projectId!==library.activeId||!$('#gallery-dialog').open)return;installImage(image,'Моя картинка','upload-'+newId());}
+  catch(error){$('#image-upload-status').textContent=error.message;}
+  finally{uploadBusy=false;$('#photo-file').value='';}
+}
+function stopPhoneUpload(){
+  photoGeneration++;clearTimeout(photoPollTimer);
+  if(photoSession){fetch(photoSession.poll_url,{method:'DELETE'}).catch(()=>{});photoSession=null;}
+  $('#phone-upload-panel').hidden=true;$('#phone-upload-button').disabled=false;
+}
+async function startPhoneUpload(){
+  stopPhoneUpload();const generation=photoGeneration,projectId=library.activeId;
+  $('#phone-upload-panel').hidden=false;$('#phone-upload-status').textContent='Создаём QR-код…';$('#phone-qr').hidden=true;$('#phone-upload-link').hidden=true;$('#phone-upload-button').disabled=true;
+  let expires=0;
+  try{
+    const response=await fetch('/api/photo-sessions',{method:'POST'});
+    if(!response.ok)throw new Error('Для QR запусти мастерскую командой python3 server.py. Пока можно загрузить фото с компьютера.');
+    const session=await response.json();
+    if(generation!==photoGeneration){fetch(session.poll_url,{method:'DELETE'}).catch(()=>{});return;}
+    photoSession=session;expires=Date.now()+session.expires_in*1000;
+    $('#phone-qr').src=session.qr_url;$('#phone-qr').hidden=false;
+    $('#phone-upload-link').href=session.upload_url;$('#phone-upload-link').textContent=session.upload_url;$('#phone-upload-link').hidden=false;
+    $('#phone-upload-status').textContent='Открой камеру телефона и наведи на QR. Оба устройства должны быть в одной сети. Код действует 10 минут.';
+    let failures=0;
+    const poll=async()=>{
+      if(generation!==photoGeneration)return;
+      if(Date.now()>expires){stopPhoneUpload();$('#image-upload-status').textContent='QR-код истёк. Нажми «С телефона по QR» ещё раз.';return;}
+      try{
+        const result=await fetch(session.poll_url),data=await result.json();
+        if(generation!==photoGeneration)return;
+        if(!result.ok)throw new Error(data.error||'Код истёк. Создай новый QR.');
+        failures=0;
+        if(data.image){if(projectId!==library.activeId){stopPhoneUpload();return;}stopPhoneUpload();installImage(data.image,'Моя картинка с телефона','phone-'+newId());return;}
+      }catch(error){
+        if(generation!==photoGeneration)return;
+        if(++failures>=3){stopPhoneUpload();$('#image-upload-status').textContent='Связь с сервером прервалась. Создай новый QR или загрузи фото с компьютера.';return;}
+      }
+      photoPollTimer=setTimeout(poll,1200);
+    };
+    photoPollTimer=setTimeout(poll,1200);
+  }catch(error){if(generation===photoGeneration){stopPhoneUpload();$('#image-upload-status').textContent=error.message;}}
+}
 
 function updateLineNumbers() { const lines = $('#code-editor').value.split('\n').length; $('#line-numbers').textContent = Array.from({ length: lines }, (_, i) => i + 1).join('\n'); $('#line-numbers').scrollTop = $('#code-editor').scrollTop; }
 function commitSource() {
@@ -365,12 +436,20 @@ function placeNode(doc, element, path, position) {
   else if (position === 'inside' && target && CONTAINERS.has(target.tagName.toLowerCase())) target.append(element);
   else defaultContainer(doc).append(element);
 }
-function clearDragHighlights() { document.querySelectorAll('.drop-active,.drop-inside,.dragging').forEach((node) => node.classList.remove('drop-active', 'drop-inside', 'dragging')); }
+function clearDragHighlights() { document.querySelectorAll('.drop-active,.drop-inside,.drop-expanded,.dragging').forEach(node=>node.classList.remove('drop-active','drop-inside','drop-expanded','dragging')); }
+function highlightDrop(drop){
+  document.querySelectorAll('.drop-active,.drop-inside').forEach(node=>node.classList.remove('drop-active','drop-inside'));
+  const scope=drop?.position==='inside'?drop.element.closest('.container-node'):null;
+  document.querySelectorAll('.drop-expanded').forEach(node=>{if(node!==scope)node.classList.remove('drop-expanded');});
+  if(!drop)return;
+  drop.element.classList.add(drop.position==='inside'?'drop-inside':'drop-active');
+  scope?.classList.add('drop-expanded');
+}
 function getDropTarget(event) {
-  const explicit = event.target.closest('[data-drop]');
-  if (explicit) return { element: explicit, position: explicit.dataset.drop, path: explicit.dataset.path ?? null };
   const row = event.target.closest('.block-row');
   if (row) return { element: row, position: row.dataset.container === 'true' ? 'inside' : 'after', path: row.dataset.path };
+  const explicit = event.target.closest('[data-drop]');
+  if (explicit) return { element: explicit, position: explicit.dataset.drop, path: explicit.dataset.path ?? null };
   return null;
 }
 function handleDrop(event) {
@@ -393,6 +472,7 @@ function applyProperty(id, value) {
   const caretEnd = active?.selectionEnd;
   mutateHTML((doc) => {
     const node = resolvePath(doc, state.selectedPath); if (!node) return;
+    if(id==='semantic-tag'&&SEMANTICS[value]){const replacement=doc.createElement(value);for(const attr of node.attributes)replacement.setAttribute(attr.name,attr.value);replacement.append(...node.childNodes);node.replaceWith(replacement);return replacement;}
     if (id === 'property-text') {
       if (['UL', 'OL'].includes(node.tagName)) {
         node.replaceChildren(...value.split('\n').filter((v) => v.trim()).map((text) => { const li = doc.createElement('li'); li.textContent = text; return li; }));
@@ -447,7 +527,7 @@ function openClassDialog() {
   $('#class-flex').checked=existing?classStyle(existing).display==='flex':false;
   $('#class-direction').value=existing?classStyle(existing).flexDirection||'row':'row';
   $('#class-gap').value=existing?parseInt(classStyle(existing).gap)||16:16;
-  $('#class-name').value = state.createdClasses.includes(existing) ? existing : state.createdClasses.includes('my-card') ? `my-style-${state.createdClasses.length + 1}` : 'my-card';
+  $('#class-name').value = state.createdClasses.includes(existing) ? existing : state.createdClasses.includes('my-style') ? `my-style-${state.createdClasses.length + 1}` : 'my-style';
   if (state.createdClasses.includes(existing)) {
     classEditingName = existing;
     const rule = state.files['style.css'].match(new RegExp(`\\.${existing}\\s*\\{([^}]*)\\}`));
@@ -462,7 +542,7 @@ function openClassDialog() {
 }
 function saveClass(event) {
   event.preventDefault(); const name = $('#class-name').value.trim();
-  if (!/^[A-Za-z_][\w-]*$/.test(name)) { toast('Назови класс латиницей, без точки и пробелов. Например: my-card.'); return; }
+  if (!/^[A-Za-z_][\w-]*$/.test(name)) { toast('Назови класс латиницей, без точки и пробелов. Например: my-style.'); return; }
   const classNumbers = ['class-padding', 'class-radius', 'class-size'].map((id) => Number($('#' + id).value));
   if (classNumbers.some((v) => !Number.isFinite(v))) return;
   checkpoint(); ensureDraft();
@@ -475,33 +555,33 @@ function saveClass(event) {
     const doc = parseHTML(); const node = resolvePath(doc, state.selectedPath);
     if (node) { if (classEditingName && classEditingName !== name) node.classList.remove(classEditingName); node.classList.add(name); state.files['index.html'] = serializeHTML(doc); }
   }
-  $('#class-dialog').close(); renderEditor(); updatePreview(); updateMissions(); saveDraft(); toast(`Класс .${name} сохранён в style.css. Назначь его ещё одному блоку.`);
+  $('#class-dialog').close(); renderEditor(); updatePreview(); updateMissions(); saveDraft(); toast(`Класс .${name} сохранён в style.css и назначен выбранному блоку. Его можно использовать повторно.`);
 }
 function completion(){
-  const doc=parseHTML(),h1=doc.querySelector('h1');
-  const cardsContainer=doc.querySelector('#interests .cards');
-  const cards=cardsContainer?[...cardsContainer.children].filter(node=>node.matches('article,.card')):[];
-  const cardsOK=cards.length>=4&&['увлеч','план','характер','способност'].every(topic=>cards.some(card=>{
-    const heading=card.querySelector('h3')?.textContent.trim().toLocaleLowerCase('ru')||'';
-    const text=card.querySelector('p')?.textContent.trim()||'';
-    return heading.includes(topic)&&text.length>0&&text!=='Напиши пару предложений о себе.'&&text!=='Расскажи, почему тебе это нравится.';
-  }));
-  const classesOK=state.createdClasses.some(name=>[...doc.body.querySelectorAll('*')].filter(node=>node.classList.contains(name)).length>=2&&classStyle(name).length>0);
-  const containerStyle=document.createElement('div').style;
-  if(cardsContainer)for(const name of cardsContainer.classList)containerStyle.cssText+=';'+classStyle(name).cssText;
-  const gap=parseFloat(containerStyle.gap);
-  const flexOK=cards.length>=4&&containerStyle.display==='flex'&&(containerStyle.flexDirection||'row')==='row'&&gap>=16&&gap<=24&&containerStyle.flexWrap==='wrap';
-  return [Boolean(h1?.textContent.trim()&&!['Привет, я Саша','Привет, я Саша.'].includes(h1.textContent.trim())),cardsOK,flexOK,classesOK,Boolean(state.imagesChosen.length&&state.lastManualFingerprint===fingerprint())];
+  const doc=parseHTML(),h1=doc.querySelector('h1'),intro=doc.querySelector('header p');
+  const ownText=Boolean(h1?.textContent.trim()&&!['Привет, я …','Привет, я Саша','Привет, я Саша.'].includes(h1.textContent.trim())&&intro?.textContent.trim()&&intro.textContent.trim()!=='Напиши пару слов о себе или о придуманном герое.');
+  const about=doc.querySelector('section#about,section.about')||[...doc.querySelectorAll('section')].find(el=>el.querySelector('h2')&&el.querySelector('p'));
+  const heading=about?.querySelector('h2')?.textContent.trim(),text=about?.querySelector('p')?.textContent.trim();
+  const structure=Boolean(heading&&text&&text!=='Несколько слов обо мне.');
+  const image=doc.querySelector('figure img'),imageStyle=image?computedBlockStyle(image):null;
+  const photo=Boolean(image?.getAttribute('src')&&image.alt.trim()&&imageStyle?.width&&imageStyle.width!=='180px');
+  const parentStyle=image?computedBlockStyle(image.parentElement):null;
+  const flex=Boolean(parentStyle?.display==='flex'&&parentStyle.justifyContent&&parentStyle.alignItems);
+  const starterClasses=new Set(['page','hero','intro','about','photo-zone','photo','site-footer','card','action']);
+  const classes=findClasses().filter(name=>state.createdClasses.includes(name)||!starterClasses.has(name)).some(name=>[...doc.body.querySelectorAll('*')].some(node=>node.classList.contains(name))&&classStyle(name).background&&parseFloat(classStyle(name).padding)>0);
+  const saved=Boolean(ownText&&image&&state.lastManualFingerprint===fingerprint());
+  return [ownText,structure,photo,flex,classes,saved];
 }
 function updateMissions(){
-  const done=completion(),count=done.filter(Boolean).length;$('#progress-count').textContent=`${count} / 5`;$('#progress-caption').textContent=count===5?'Твой сайт готов!':'Пять шагов до своего сайта';
+  const done=completion(),count=done.filter(Boolean).length;$('#progress-count').textContent=`${count} / ${MISSIONS.length}`;$('#progress-caption').textContent=count===MISSIONS.length?'Твоя страница готова!':'Шесть шагов · одна страница о себе';
   $('#mission-nav').innerHTML=MISSIONS.map((mission,i)=>`<button class="${i===state.mission?'active':''} ${done[i]?'done':''}" data-mission="${i}" aria-current="${i===state.mission?'step':'false'}"><span>${done[i]?'✓':i+1}</span>${mission.short}</button>`).join('');
   const mission=MISSIONS[state.mission];$('#mission-number').textContent=String(state.mission+1).padStart(2,'0');$('#mission-category').textContent=`ШАГ ${state.mission+1} · ${mission.category}`;$('#mission-time').textContent=mission.time;$('#mission-title').textContent=mission.title;$('#mission-description').textContent=mission.description;
-  $('#check-button').textContent=done[state.mission]?(state.mission===4?'Готово ✓':'Дальше →'):'Проверить →';
+  $('#mission-action-button').textContent=state.mission===5?'Сохранить страницу':'К нужному блоку';
+  $('#check-button').textContent=done[state.mission]?(state.mission===MISSIONS.length-1?'Готово ✓':'Дальше →'):'Проверить →';
   $('#hint-button').setAttribute('aria-expanded',String(!$('#hint-box').hidden));if(!$('#hint-box').hidden)$('#hint-box').innerHTML='<b>Подсказка.</b> '+mission.hint;
-  if(count===5&&!lessonCompleteAnnounced){lessonCompleteAnnounced=true;toast('Все шаги пройдены! Сохрани переносимый код через «Результат», чтобы продолжить на другом компьютере.');}
+  if(count===MISSIONS.length&&!lessonCompleteAnnounced){lessonCompleteAnnounced=true;toast('Все шаги пройдены! Сохрани переносимый код через «Результат», чтобы продолжить на другом компьютере.');}
 }
-function checkMission(){flushSource();const done=completion();if(!done[state.mission]){$('#hint-box').hidden=false;updateMissions();toast(MISSIONS[state.mission].fail);return;}const next=done.findIndex((finished,i)=>!finished&&i>state.mission);if(next>=0){state.mission=next;$('#hint-box').hidden=true;updateMissions();saveDraft();missionAction();toast('Шаг выполнен. Следующее задание уже открыто.');}else toast(done.every(Boolean)?'Ты собрал свой сайт: блоки, Flexbox, общий стиль и картинка.':'Шаг выполнен. Выбери остальные задания в маршруте.');}
+function checkMission(){flushSource();const done=completion();if(!done[state.mission]){$('#hint-box').hidden=false;updateMissions();toast(MISSIONS[state.mission].fail);return;}const next=done.findIndex((finished,i)=>!finished&&i>state.mission);if(next>=0){state.mission=next;$('#hint-box').hidden=true;updateMissions();saveDraft();missionAction();toast('Шаг выполнен. Следующее задание уже открыто.');}else toast(done.every(Boolean)?'Готово! Твоя страница: HTML, смысловые блоки, картинка, Flexbox и CSS-класс.':'Шаг выполнен. Выбери остальные задания в маршруте.');}
 
 function buildPreview(files) {
   const doc = parseHTML(files['index.html']);
@@ -553,10 +633,15 @@ async function decodeProject(code){
 }
 async function openTransfer(mode){flushSource();$('#result-dialog').close();$('#projects-dialog').close();transferMode=mode;$('#code-transfer-status').textContent='';$('#project-code-text').readOnly=mode==='export';$('#copy-code-button').hidden=mode!=='export';$('#restore-code-button').hidden=mode!=='import';$('#project-code-heading').textContent=mode==='export'?'Код твоего проекта':'Открыть проект по коду';$('#project-code-description').textContent=mode==='export'?'Скопируй этот текст и сохрани в доступном месте: например, в школьном дневнике. Позже открой «Мои проекты → Открыть по коду» и вставь его. Исходная работа останется здесь.':'Вставь ранее сохранённый код WL1:. Работа откроется как новый проект; существующие проекты сохранятся.';$('#project-code-text').value=mode==='export'?'Подготавливаем код…':'';$('#code-dialog').showModal();if(mode==='export'){try{$('#project-code-text').value=await projectCode();$('#code-transfer-status').textContent='Готово. Код переносит HTML, CSS, JavaScript и настройки.';}catch(error){$('#code-transfer-status').textContent='Не удалось подготовить код: '+error.message;}}else $('#project-code-text').focus();}
 async function restoreCode(){if(transferBusy)return;transferBusy=true;$('#restore-code-button').disabled=true;try{const restored=await decodeProject($('#project-code-text').value);flushSource();persistState();const id=newId();library.activeId=id;state=restored;if(Object.values(library.projects).some(project=>project.name===state.name))state.name=state.name.slice(0,50)+' (копия)';library.projects[id]={id,name:state.name,createdAt:Date.now(),updatedAt:Date.now(),state:clone(state),versions:[]};$('#code-dialog').close();resetView();persistState();toast('Проект восстановлен из кода. Можно продолжать.');}catch(error){$('#code-transfer-status').textContent='Не удалось открыть: '+error.message;}finally{transferBusy=false;$('#restore-code-button').disabled=false;}}
-$('#library-items').innerHTML=BLOCKS.map(block=>`<button class="library-item" draggable="true" data-block="${block.key}" title="${escapeHTML(block.hint)}"><b>${block.tag}</b>${block.name}</button>`).join('');
+function libraryButton(block){return `<button class="library-item" draggable="true" data-block="${block.key}" title="${escapeHTML(block.hint)}"><b>${block.tag}</b>${block.name}</button>`;}
+const basicBlocks=new Set(['h1','h2','p','section','div','img']);
+$('#library-items').innerHTML=BLOCKS.filter(block=>basicBlocks.has(block.key)).map(libraryButton).join('')+`<details class="extra-blocks"><summary>Ещё блоки · необязательно</summary><div>${BLOCKS.filter(block=>!basicBlocks.has(block.key)).map(libraryButton).join('')}</div></details>`;
 document.addEventListener('click',event=>{
   const target=event.target,file=target.closest('[data-file]');if(file)selectFile(file.dataset.file);
   const mode=target.closest('[data-mode]');if(mode){flushSource();state.mode=mode.dataset.mode;renderEditor();saveDraft();}
+  const fold=target.closest('[data-fold]');if(fold){const path=fold.dataset.fold;if(fold.getAttribute('aria-expanded')==='true'){collapsedNodes.add(path);expandedEmptyNodes.delete(path);}else{collapsedNodes.delete(path);expandedEmptyNodes.add(path);}renderTree();return;}
+  const crumb=target.closest('[data-select-path]');if(crumb)selectPath(crumb.dataset.selectPath);
+  const preset=target.closest('[data-position]');if(preset){const node=resolvePath(parseHTML(),state.selectedPath),column=styleValue(node,'flex-direction','row')==='column';const positions={center:['center','center'],left:column?['center','flex-start']:['flex-start','center'],bottom:column?['flex-end','center']:['center','flex-end']};const [justify,align]=positions[preset.dataset.position];applyStyles({display:'flex','justify-content':justify,'align-items':align});}
   const row=target.closest('.block-row');if(row&&!dragPayload)selectPath(row.dataset.path);
   const block=target.closest('[data-block]');if(block&&!dragPayload){if(block.dataset.block==='img')openGallery();else addBlock(block.dataset.block);}
   const action=target.closest('[data-node-action]');if(action)nodeAction(action.dataset.nodeAction);
@@ -583,7 +668,7 @@ document.addEventListener('dragstart', (event) => {
   event.dataTransfer.setData('text/plain', dragPayload); event.dataTransfer.effectAllowed = block ? 'copy' : 'move';
   if (row) row.classList.add('dragging');
 });
-document.addEventListener('dragover', (event) => { if (!dragPayload && !event.dataTransfer?.types.includes('text/plain')) return; const drop = getDropTarget(event); if (!drop) return; event.preventDefault(); clearDragHighlights(); drop.element.classList.add(drop.position === 'inside' ? 'drop-inside' : 'drop-active'); event.dataTransfer.dropEffect = dragPayload?.startsWith('new:') ? 'copy' : 'move'; });
+document.addEventListener('dragover', (event) => { if (!dragPayload && !event.dataTransfer?.types.includes('text/plain')) return; const drop = getDropTarget(event); if (!drop) return; event.preventDefault(); highlightDrop(drop); event.dataTransfer.dropEffect = dragPayload?.startsWith('new:') ? 'copy' : 'move'; });
 document.addEventListener('drop', handleDrop);
 document.addEventListener('dragend', () => { clearDragHighlights(); dragPayload = null; });
 // Pointer dragging also works in embedded browsers and with touch input.
@@ -603,10 +688,9 @@ document.addEventListener('pointermove', (event) => {
   }
   event.preventDefault();
   const ghost = $('#drag-ghost'); ghost.style.left = `${event.clientX + 14}px`; ghost.style.top = `${event.clientY + 12}px`;
-  clearDragHighlights();
   const target = document.elementFromPoint(event.clientX, event.clientY);
   const drop = target && getDropTarget({ target });
-  if (drop) drop.element.classList.add(drop.position === 'inside' ? 'drop-inside' : 'drop-active');
+  highlightDrop(drop);
   const panel = $('#builder-panel'); const rect = panel.getBoundingClientRect();
   if (event.clientX > rect.left && event.clientX < rect.right && event.clientY > rect.top && event.clientY < rect.bottom) {
     if (event.clientY < rect.top + 30) panel.scrollTop -= 10;
@@ -634,6 +718,8 @@ $('#element-properties').addEventListener('input',event=>{
 });
 $('#element-properties').addEventListener('change',event=>{
   const target=event.target;
+  if(target.id==='semantic-tag')applyProperty(target.id,target.value);
+  if(target.id==='parent-container'){const path=target.value;mutateHTML(doc=>{const node=resolvePath(doc,state.selectedPath),parent=path?resolvePath(doc,path):doc.body;if(!node||!parent||node===parent||node.contains(parent))return;parent.append(node);return node;},{announce:'Вложенность изменена. Посмотри на скобки в структуре.'});}
   if(target.id==='style-rule-target'){state.selectedClass=target.value||'__own__';renderProperties();}
   if(target.dataset.style){applyStyles({[target.dataset.style]:target.value+(target.dataset.unit||'')});}
   if(target.id==='property-flex-enabled')applyStyles(target.checked?{display:'flex','flex-direction':'row',gap:'16px','flex-wrap':'wrap'}:{display:'block'});
@@ -649,13 +735,17 @@ $('#class-form').addEventListener('input',updateClassSample);
 $('#class-form').addEventListener('submit',saveClass);
 $('#help-button').addEventListener('click',()=>$('#help-dialog').showModal());
 $('#hint-button').addEventListener('click',()=>{$('#hint-box').hidden=!$('#hint-box').hidden;updateMissions();if(!$('#hint-box').hidden)$('#hint-box').scrollIntoView({behavior:'smooth',block:'nearest'});});
-$('#mission-action-button').addEventListener('click',missionAction);
+$('#mission-action-button').addEventListener('click',()=>state.mission===5?saveProject():missionAction());
 $('#check-button').addEventListener('click',checkMission);
 $('#inspect-toggle').addEventListener('change',event=>{inspectMode=event.target.checked;updatePreview();if(inspectMode)toast('Нажми на блок в странице — справа откроются его настройки.');});
 $('#css-toggle').addEventListener('change',event=>{cssEnabled=event.target.checked;updatePreview();event.target.nextElementSibling.textContent=cssEnabled?'CSS включён':'CSS выключен';toast(cssEnabled?'Оформление вернулось.':'Осталась структура HTML — элементы существуют без оформления.');});
 $('#refresh-button').addEventListener('click',()=>{flushSource();updatePreview();});
 $('#show-css-button').addEventListener('click',()=>selectFile('style.css'));
 $('#gallery-button').addEventListener('click',openGallery);
+$('#local-upload-button').addEventListener('click',()=>$('#photo-file').click());
+$('#photo-file').addEventListener('change',event=>chooseLocalImage(event.target.files[0]));
+$('#phone-upload-button').addEventListener('click',startPhoneUpload);
+$('#gallery-dialog').addEventListener('close',stopPhoneUpload);
 $('#save-button').addEventListener('click',saveProject);
 $('#project-title').addEventListener('input',event=>{state.name=event.target.value.trim().slice(0,60)||'Мой сайт';saveDraft();});
 $('#projects-button').addEventListener('click',renderProjects);
