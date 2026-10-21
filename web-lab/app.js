@@ -65,7 +65,7 @@ const BLOCKS = [
   {key:'div',tag:'div',name:'Контейнер',html:'<div></div>',hint:'div объединяет вложенные блоки.'},
   {key:'article',tag:'article',name:'Подборка',html:'<article></article>',hint:'article — самостоятельный материал. В упражнении это подборка интересов.'},
   {key:'section',tag:'section',name:'Раздел',html:'<section></section>',hint:'section — раздел с заголовком.'},
-  {key:'figure',tag:'figure',name:'Блок картинки',html:'<figure></figure>',hint:'figure — контейнер для изображения.'},
+  {key:'figure',tag:'figure',name:'Иллюстрация',html:'<figure></figure>',hint:'figure — самостоятельная иллюстрация, например с подписью. Для img эта обёртка необязательна.'},
   {key:'img',tag:'img',name:'Картинка',html:'<img class="photo" src="assets/mountains.jpg" alt="Горные вершины">',hint:'img — изображение. Выбери готовое или отправь фото по QR.'}
 ];
 const CONTAINERS = new Set(['main','section','div','header','footer','article','nav','aside','form','figure']);
@@ -342,17 +342,21 @@ function stopPhoneUpload(){
 }
 async function startPhoneUpload(){
   stopPhoneUpload();const generation=photoGeneration,projectId=library.activeId;
+  $('#image-upload-status').textContent='';
   $('#phone-upload-panel').hidden=false;$('#phone-upload-status').textContent='Создаём QR-код…';$('#phone-qr').hidden=true;$('#phone-upload-link').hidden=true;$('#phone-upload-button').disabled=true;
   let expires=0;
   try{
     const response=await fetch('/api/photo-sessions',{method:'POST'});
-    if(!response.ok)throw new Error('QR сейчас недоступен. Попробуй ещё раз или выбери готовую картинку.');
-    const session=await response.json();
+    let session;
+    try{session=await response.json();}catch{}
+    if([404,405,501].includes(response.status))throw new Error(`Сервис передачи фото не подключён к этому сайту (HTTP ${response.status}). Сообщи преподавателю.`);
+    if(!response.ok)throw new Error(session?.error||`Сервер передачи фото вернул ошибку (HTTP ${response.status}). Попробуй ещё раз.`);
+    if(!session?.upload_url||!session?.poll_url||!session?.qr_url||!(session.expires_in>0))throw new Error('Вместо сервиса передачи фото открылась обычная страница. Сообщи преподавателю.');
     if(generation!==photoGeneration){fetch(session.poll_url,{method:'DELETE'}).catch(()=>{});return;}
     photoSession=session;expires=Date.now()+session.expires_in*1000;
     $('#phone-qr').src=session.qr_url;$('#phone-qr').hidden=false;
     $('#phone-upload-link').href=session.upload_url;$('#phone-upload-link').textContent='Открыть страницу загрузки';$('#phone-upload-link').hidden=false;
-    $('#phone-upload-status').textContent='Телефон и компьютер — в одной сети. Выбери фото на телефоне. Ссылка действует 10 минут.';
+    $('#phone-upload-status').textContent='Отсканируй QR и выбери фото на телефоне. Ссылка действует 10 минут.';
     let failures=0;
     const poll=async()=>{
       if(generation!==photoGeneration)return;
@@ -370,7 +374,7 @@ async function startPhoneUpload(){
       photoPollTimer=setTimeout(poll,1200);
     };
     photoPollTimer=setTimeout(poll,1200);
-  }catch(error){if(generation===photoGeneration){stopPhoneUpload();$('#image-upload-status').textContent=error.message;}}
+  }catch(error){if(generation===photoGeneration){stopPhoneUpload();$('#image-upload-status').textContent=error instanceof TypeError?'Не удалось связаться с сервером передачи фото. Проверь подключение и попробуй ещё раз.':error.message;}}
 }
 
 function updateLineNumbers() { const lines = $('#code-editor').value.split('\n').length; $('#line-numbers').textContent = Array.from({ length: lines }, (_, i) => i + 1).join('\n'); $('#line-numbers').scrollTop = $('#code-editor').scrollTop; }
@@ -485,7 +489,7 @@ function openClassDialog() {
   $('#class-flex').checked=existing?classStyle(existing).display==='flex':false;
   $('#class-direction').value=existing?classStyle(existing).flexDirection||'row':'row';
   $('#class-gap').value=existing?parseInt(classStyle(existing).gap)||16:16;
-  const suggested=state.mission===1?(node?.tagName==='FIGURE'?'hero_img':'hero_item'):state.mission===2?(node?.tagName==='ARTICLE'?'interesting':node?.tagName==='P'?'interesting_title':'interesting_card'):'my-style';
+  const suggested=state.mission===1?(['FIGURE','IMG'].includes(node?.tagName)?'hero_img':'hero_item'):state.mission===2?(node?.tagName==='ARTICLE'?'interesting':node?.tagName==='P'?'interesting_title':'interesting_card'):'my-style';
   $('#class-name').value=existing||suggested;
   if (state.createdClasses.includes(existing)) {
     classEditingName = existing;

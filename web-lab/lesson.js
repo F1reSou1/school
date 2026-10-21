@@ -12,10 +12,10 @@ window.WorkshopLesson = (() => {
     },
     {
       short: 'Блоки и классы', title: 'Собери вступление из двух блоков',
-      description: 'Внутри hero объедини h1 и p в div.hero_item. Рядом создай figure.hero_img, отправь фото по QR и настрой его.',
-      theory: `<h3>Семантика: тег обозначает смысл</h3><p>Смысловые теги помогают скринридерам, которыми пользуются незрячие люди, находить разделы и заголовки. Поисковым роботам они тоже помогают понимать структуру. Оформление при этом задаёт CSS.</p><dl class="semantic-list"><dt>main</dt><dd>Главное содержимое страницы. Обычно одно.</dd><dt>header</dt><dd>Вступление: здесь имя и знакомство.</dd><dt>section + h2</dt><dd>Раздел с заголовком, например «Мои интересы».</dd><dt>article</dt><dd>Самостоятельный материал. В упражнении — подборка интересов.</dd><dt>div</dt><dd>Нейтральный контейнер для группировки и расположения.</dd><dt>figure + img</dt><dd>Иллюстрация и сама картинка. Атрибут alt описывает значимое изображение.</dd><dt>h1, h2, p</dt><dd>Главный заголовок, заголовок раздела и обычный абзац.</dd><dt>footer</dt><dd>Завершение страницы: подпись автора.</dd></dl><h3>БЭМ — блок, элемент, модификатор</h3><p>Понятные имена классов показывают связь частей: блок <code>hero</code>, его элемент <code>hero__item</code>, вариант <code>hero__item--wide</code>. Это один из распространённых способов записи БЭМ. Классы помогают разработчикам; смысл для скринридера задают теги, а не названия классов.</p><p>В этом упражнении используем заданные короткие имена с одним подчёркиванием: <code>hero_item</code> и <code>hero_img</code>. Это учебные имена, а не стандартная запись элемента БЭМ через <code>__</code>.</p><pre>header.hero {\n  div.hero_item { h1, p }\n  figure.hero_img { img }\n}</pre>`,
-      task: ['Выбери header.hero и добавь «Контейнер» (div). Назначь класс hero_item.', 'Перемести существующие h1 и p внутрь hero_item: перетащи их или измени «Родитель».', 'В том же hero создай «Блок картинки» (figure), назначь класс hero_img.', 'Выбери figure.hero_img → «Картинка» → «С телефона по QR». Отправь своё фото.', 'Выбери img, напиши описание alt и настрой ширину, скругление или пропорции.'],
-      hint: 'Сначала выдели header.hero, чтобы новый блок оказался внутри него. Классы вводятся без точки. Для переноса h1 и p используй поле «Родитель». Фото добавляй в figure.hero_img.',
+      description: 'Внутри hero объедини h1 и p в div.hero_item. Рядом добавь img.hero_img, отправь фото по QR и настрой его.',
+      theory: `<h3>Семантика: тег обозначает смысл</h3><p>Смысловые теги помогают скринридерам, которыми пользуются незрячие люди, находить разделы и заголовки. Поисковым роботам они тоже помогают понимать структуру. Оформление при этом задаёт CSS.</p><dl class="semantic-list"><dt>main</dt><dd>Главное содержимое страницы. Обычно одно.</dd><dt>header</dt><dd>Вступление: здесь имя и знакомство.</dd><dt>section + h2</dt><dd>Раздел с заголовком, например «Мои интересы».</dd><dt>article</dt><dd>Самостоятельный материал. В упражнении — подборка интересов.</dd><dt>div</dt><dd>Нейтральный контейнер для группировки и расположения.</dd><dt>img</dt><dd>Картинка. Её можно вставить прямо в контейнер. Атрибут alt описывает значимое изображение.</dd><dt>figure</dt><dd>Самостоятельная иллюстрация, при необходимости с подписью figcaption. Для img эта обёртка необязательна.</dd><dt>h1, h2, p</dt><dd>Главный заголовок, заголовок раздела и обычный абзац.</dd><dt>footer</dt><dd>Завершение страницы: подпись автора.</dd></dl><h3>БЭМ — блок, элемент, модификатор</h3><p>Понятные имена классов показывают связь частей: блок <code>hero</code>, его элемент <code>hero__item</code>, вариант <code>hero__item--wide</code>. Это один из распространённых способов записи БЭМ. Классы помогают разработчикам; смысл для скринридера задают теги, а не названия классов.</p><p>В этом упражнении используем заданные короткие имена с одним подчёркиванием: <code>hero_item</code> и <code>hero_img</code>. Это учебные имена, а не стандартная запись элемента БЭМ через <code>__</code>.</p><pre>header.hero {\n  div.hero_item { h1, p }\n  img.hero_img\n}</pre>`,
+      task: ['Выбери header.hero и добавь «Контейнер» (div). Назначь класс hero_item.', 'Перемести существующие h1 и p внутрь hero_item: перетащи их или измени «Родитель».', 'В том же hero добавь «Картинка» (img), назначь ей класс hero_img.', 'Выбери img.hero_img → «Заменить картинку» → «С телефона по QR». Отправь своё фото.', 'Выбери img, напиши описание alt и настрой ширину, скругление или пропорции.'],
+      hint: 'Сначала выдели header.hero, чтобы новый блок оказался внутри него. Классы вводятся без точки. Для переноса h1 и p используй поле «Родитель». Фото можно вставить прямо как img.hero_img. Обёртка figure.hero_img или div.hero_img с вложенным img тоже допустима.',
       sources: [['Именование БЭМ','https://getbem.com/naming/'],['Семантика · MDN','https://developer.mozilla.org/en-US/docs/Glossary/Semantics']]
     },
     {
@@ -33,7 +33,8 @@ window.WorkshopLesson = (() => {
   const child = (node,selector) => [...(node?.children||[])].find(el=>el.matches(selector));
   function checks(doc, getStyle, state) {
     const main=doc.querySelector('main.page'),hero=main?.querySelector('header.hero'),heading=hero?.querySelector('h1'),intro=hero?.querySelector('p');
-    const item=child(hero,'div.hero_item'),figure=child(hero,'figure.hero_img,div.hero_img'),image=figure?.querySelector('img');
+    const item=child(hero,'div.hero_item'),media=child(hero,'img.hero_img,figure.hero_img,div.hero_img'),image=media?.matches('img')?media:media?.querySelector('img');
+    const imageSelector='header.hero img.hero_img, header.hero .hero_img img';
     const section=main?.querySelector('section#interests,section.interests')||[...(main?.querySelectorAll('section')||[])].find(el=>/интерес/i.test(text(el.querySelector('h2'))));
     const article=child(section,'article.interesting'),cards=[...(article?.children||[])].filter(el=>el.matches('div'));
     const style=node=>node?getStyle(node):document.createElement('div').style;
@@ -51,14 +52,14 @@ window.WorkshopLesson = (() => {
       [
         row('hero-item','В hero создай div с классом hero_item.',item,'header.hero'),
         row('hero-text','Перемести h1 и p внутрь hero_item.',item&&child(item,'h1')&&child(item,'p')&&hero?.querySelectorAll('h1').length===1,'header.hero'),
-        row('hero-img','Рядом создай figure с классом hero_img.',figure,'header.hero'),
+        row('hero-img','Рядом добавь картинку с классом hero_img.',media,'header.hero'),
         row('qr','Добавь в hero_img своё фото через QR.',qr,'header.hero .hero_img',{action:'qr'}),
-        row('alt','Напиши описание фото в alt.',image?.alt.trim()&&!['Моя картинка с телефона','Моя картинка'].includes(image.alt.trim()),'header.hero .hero_img img'),
-        row('photo-settings','Настрой ширину, пропорции или скругление фото.',configured,'header.hero .hero_img img')
+        row('alt','Напиши описание фото в alt.',image?.alt.trim()&&!['Моя картинка с телефона','Моя картинка'].includes(image.alt.trim()),imageSelector),
+        row('photo-settings','Настрой ширину, пропорции или скругление фото.',configured,imageSelector)
       ],
       [
-        row('hero-row','У hero включи Flexbox и направление «В ряд».',item&&figure&&heroStyle.display==='flex'&&['','row'].includes(heroStyle.flexDirection),'header.hero',{flex:true}),
-        row('photo-small','Уменьши фото до 240 px или меньше.',image&&parseFloat(imageStyle.width)>0&&parseFloat(imageStyle.width)<=240,'header.hero .hero_img img'),
+        row('hero-row','У hero включи Flexbox и направление «В ряд».',item&&media&&heroStyle.display==='flex'&&['','row'].includes(heroStyle.flexDirection),'header.hero',{flex:true}),
+        row('photo-small','Уменьши фото до 240 px или меньше.',image&&parseFloat(imageStyle.width)>0&&parseFloat(imageStyle.width)<=240,imageSelector),
         row('interests-article','В «Мои интересы» создай article.interesting.',article,'section#interests,section.interests')
       ]
     ];

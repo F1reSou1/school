@@ -1,0 +1,19 @@
+[Unit]
+Description=School workshop QR photo handoff
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/school-photo
+ExecStart=/usr/bin/python3 -B /opt/school-photo/server.py --bind 127.0.0.1 --port 4174 --public-url https://school.tube-city.ru
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

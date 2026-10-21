@@ -89,6 +89,47 @@ test('second task validates siblings, QR origin, alt and photo settings',t=>{
   assert.equal(checks.find(item=>item.id==='hero-img').done,false,'photo block must be a sibling');
 });
 
+test('direct img.hero_img completes the lesson without figure and step links select the image',t=>{
+  const ui=editor(t);ui.click('#theory-start');finishFirst(ui);finishSecond(ui);
+  ui.run(`mutateHTML(doc=>{const wrapper=doc.querySelector('figure.hero_img'),image=wrapper.querySelector('img');image.classList.add('hero_img');wrapper.replaceWith(image);return image;});state.mission=1;updateMissions();`);
+  assert.equal(ui.percent(),'100%');
+  assert.equal(ui.run(`parseHTML().querySelectorAll('figure').length`),0);
+  ui.run(`applyProperty('property-alt','');missionAction();`);
+  assert.equal(ui.run(`resolvePath(parseHTML(),state.selectedPath).tagName`),'IMG');
+  ui.run(`applyProperty('property-alt','Моя гитара');openClassDialog();`);
+  assert.equal(ui.doc.querySelector('#class-name').value,'hero_img');
+  ui.doc.querySelector('#class-dialog').close();
+  ui.run(`applyStyles({width:'220px'});state.mission=2;selectPath('0.0');applyStyles({display:'flex','flex-direction':'row'});`);
+  buildCards(ui);
+  ui.run(`for(const name of ['interesting_card','interesting_title','interesting_description']){const rule=document.createElement('div').style;rule.cssText='padding:4px';putClassStyle(name,rule);}updateMissions();`);
+  assert.equal(ui.percent(),'100%');
+});
+
+test('QR errors distinguish missing nginx route, backend refusal and network failure; retry clears the error',async t=>{
+  const ui=editor(t);ui.click('#theory-start');ui.run('openGallery()');
+  for(const status of [404,405,501]){
+    ui.win.fetch=async()=>({ok:false,status,json:async()=>{throw new SyntaxError('HTML error page');}});
+    await ui.run('startPhoneUpload()');
+    assert.match(ui.doc.querySelector('#image-upload-status').textContent,/Сервис передачи фото не подключён/);
+    assert.ok(ui.doc.querySelector('#image-upload-status').textContent.includes(String(status)));
+    assert.equal(ui.doc.querySelector('#phone-upload-button').disabled,false);
+  }
+  ui.win.fetch=async()=>({ok:false,status:429,json:async()=>({error:'Слишком много QR-кодов. Подожди немного.'})});
+  await ui.run('startPhoneUpload()');
+  assert.match(ui.doc.querySelector('#image-upload-status').textContent,/Слишком много/);
+  ui.win.fetch=async()=>({ok:true,status:200,json:async()=>{throw new SyntaxError('SPA fallback');}});
+  await ui.run('startPhoneUpload()');
+  assert.match(ui.doc.querySelector('#image-upload-status').textContent,/обычная страница/);
+  ui.win.fetch=async()=>{throw new ui.win.TypeError('Failed to fetch');};
+  await ui.run('startPhoneUpload()');
+  assert.match(ui.doc.querySelector('#image-upload-status').textContent,/Проверь подключение/);
+  const transport=qrTransport();connectQR(ui,transport);
+  await ui.run('startPhoneUpload()');
+  assert.equal(ui.doc.querySelector('#image-upload-status').textContent,'');
+  assert.equal(ui.doc.querySelector('#phone-qr').hidden,false);
+  ui.run('stopPhoneUpload()');
+});
+
 test('pictures go into each selected card, replacement does not add duplicates',t=>{
   const ui=editor(t);ui.click('#theory-start');buildCards(ui);
   ui.run(`selectPath('0.1.1.0');imageTargetPath=state.selectedPath;installImage('assets/sport.jpg','Спорт','sport');`);

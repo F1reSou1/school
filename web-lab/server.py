@@ -92,7 +92,12 @@ class Handler(SimpleHTTPRequestHandler):
 
     def same_origin(self):
         origin = self.headers.get('Origin')
-        return not origin or origin == 'http://' + self.headers.get('Host', '')
+        public = urlsplit(self.server.public_url)
+        # TLS may terminate at nginx while this server listens on loopback HTTP.
+        # Accept only the explicitly configured public origin, not forwarded headers.
+        allowed = {'http://' + self.headers.get('Host', ''),
+                   f'{public.scheme}://{public.netloc}'}
+        return not origin or origin in allowed
 
     def read_json(self):
         try:
@@ -199,7 +204,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--port', type=int, default=4173)
     parser.add_argument('--bind', default='0.0.0.0')
-    parser.add_argument('--public-url', help='LAN address reachable from phones, e.g. http://192.168.1.10:4173')
+    parser.add_argument('--public-url', help='Address reachable from phones, e.g. https://school.example or http://192.168.1.10:4173')
     args = parser.parse_args()
     server = ThreadingHTTPServer((args.bind, args.port), Handler)
     server.public_url = (args.public_url or f'http://{lan_address()}:{args.port}').rstrip('/')

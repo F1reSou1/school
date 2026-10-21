@@ -93,6 +93,26 @@ class PhotoHandoffTests(unittest.TestCase):
         self.assertEqual(self.request('/api/photo-upload', 'POST', data)[0], 200)
         self.assertEqual(self.request('/api/photo-upload', 'POST', data)[0], 200)
 
+    def test_https_public_origin_behind_reverse_proxy(self):
+        public = 'https://school.tube-city.ru'
+        self.http.public_url = public
+        self.addCleanup(setattr, self.http, 'public_url', self.base)
+        headers = {'Origin': public, 'Host': 'school.tube-city.ru'}
+        status, session = self.request('/api/photo-sessions', 'POST', headers=headers)
+        self.assertEqual(status, 201)
+        self.assertTrue(session['upload_url'].startswith(public + '/upload.html#token='))
+        self.assertEqual(self.request(session['qr_url'])[0], 200)
+        token = session['upload_url'].split('#token=')[1]
+        self.assertEqual(self.request('/api/photo-upload', 'POST',
+            {'token': token, 'image': self.photo}, headers)[0], 200)
+        self.assertEqual(self.request(session['poll_url'])[1]['image'], self.photo)
+        self.assertEqual(self.request(session['poll_url'], 'DELETE', headers=headers)[0], 200)
+
+    def test_forwarded_headers_cannot_authorize_a_foreign_origin(self):
+        headers = {'Origin': 'https://other.example', 'X-Forwarded-Host': 'other.example',
+                   'X-Forwarded-Proto': 'https'}
+        self.assertEqual(self.request('/api/photo-sessions', 'POST', headers=headers)[0], 403)
+
     def test_classroom_parallel_uploads_stay_in_their_own_sessions(self):
         # A distinct, valid JPEG per pupil: insert a JPEG comment after SOI.
         jpeg = (Path(server.ROOT) / 'assets/sport.jpg').read_bytes()
