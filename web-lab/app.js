@@ -381,7 +381,7 @@ function missionAction(){
   }
   if(next.spacing){const field=$('[data-style="padding"]');field?.closest('details')?.setAttribute('open','');field?.focus();}
   if(next.flex){$('#property-flex-enabled')?.closest('details')?.setAttribute('open','');$('#property-flex-enabled')?.focus({preventScroll:true});}
-  if(next.action==='qr'&&node){openGallery();startPhoneUpload();}
+  if(next.action==='gallery'&&node)openGallery();
 }
 
 function openGallery(){flushSource();stopPhoneUpload();imageTargetPath=state.selectedPath;galleryFilter='Все';$('#image-upload-status').textContent='';renderGallery();$('#gallery-dialog').showModal();}
@@ -597,7 +597,7 @@ function saveClass(event) {
   $('#class-dialog').close(); renderEditor(); updatePreview(); updateMissions(); saveDraft(); toast(`Класс .${name} сохранён в style.css и назначен выбранному блоку. Его можно использовать повторно.`);
 }
 function lessonChecks(doc=parseHTML()){
-  return WorkshopLesson.checks(doc,(node,name)=>name?classStyle(name):computedBlockStyle(node),state);
+  return WorkshopLesson.checks(doc,(node,name)=>name?classStyle(name):computedBlockStyle(node),state,IMAGES.flatMap(image=>[image.file,new URL(image.file,location.href).href]));
 }
 function completion(){return lessonChecks().map(items=>WorkshopLesson.progress(items).complete);}
 function updateMissions(){

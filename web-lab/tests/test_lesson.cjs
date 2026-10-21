@@ -219,7 +219,7 @@ test('100% congratulates; transition requires click and shows next theory',t=>{
   assert.match(ui.doc.querySelector('#theory-content').textContent,/скринридер/);
 });
 
-test('second task validates siblings, QR origin and photo settings with optional alt',t=>{
+test('second task validates siblings, QR or library photo and settings with optional alt',t=>{
   const ui=editor(t);ui.click('#theory-start');finishFirst(ui);ui.click('#check-button');ui.click('#theory-start');
   buildHero(ui);
   assert.equal(ui.percent(),'67%');
@@ -230,10 +230,39 @@ test('second task validates siblings, QR origin and photo settings with optional
   ui.run(`selectPath('0.0.0');applyStyles({'max-width':'360px'});`);
   assert.equal(ui.percent(),'100%');
   ui.run(`mutateHTML(doc=>doc.querySelector('.hero__img img').setAttribute('src','assets/music.jpg'));`);
-  assert.notEqual(ui.percent(),'100%','library photo cannot masquerade as QR');
+  assert.equal(ui.percent(),'100%','library photo is an accepted alternative to QR');
   ui.run(`mutateHTML(doc=>doc.querySelector('.hero__item').append(doc.querySelector('.hero__img')));`);
   const checks=ui.run('lessonChecks()[1]');
   assert.equal(checks.find(item=>item.id==='hero-img').done,false,'photo block must be a sibling');
+});
+
+test('library fallback completes task two without QR and survives save and reload',t=>{
+  const ui=editor(t);ui.click('#theory-start');finishFirst(ui);ui.click('#check-button');
+  assert.match(ui.doc.querySelector('#theory-content').textContent,/Если QR не работает/);
+  ui.click('#theory-start');finishSecond(ui);
+  ui.run(`state.qrImages=[];mutateHTML(doc=>doc.querySelector('.hero__img img').setAttribute('src',''));`);
+  assert.equal(ui.percent(),'83%','empty image is incomplete');
+  assert.match(ui.doc.querySelector('#next-step').textContent,/QR или готовую картинку/);
+  ui.run('missionAction()');
+  assert.equal(ui.doc.querySelector('#gallery-dialog').open,true);
+  assert.equal(ui.run('photoSession'),null,'the next step offers both choices without forcing a QR request');
+  ui.click('[data-image="music"]');
+  assert.equal(ui.run(`parseHTML().querySelector('.hero__img img').getAttribute('src')`),'assets/music.jpg');
+  assert.equal(ui.run('state.qrImages.length'),0,'library pictures need no QR provenance');
+  assert.equal(ui.percent(),'100%');
+  for(const source of ['assets/missing.jpg','https://example.com/photo.jpg','data:image/jpeg;base64,/9j/UNTRACKED']){
+    ui.run(`mutateHTML(doc=>doc.querySelector('.hero__img img').setAttribute('src',${JSON.stringify(source)}));`);
+    assert.equal(ui.percent(),'83%','an arbitrary or missing image is not a library selection');
+  }
+  ui.run(`openGallery();chooseImage('space');`);
+  assert.equal(ui.percent(),'100%');
+  ui.click('#save-button');
+  const restored=editor(t,JSON.parse(ui.win.localStorage.getItem('web-workshop-projects-v1')));
+  assert.equal(restored.percent(),'100%');
+  assert.equal(restored.run('state.qrImages.length'),0);
+  restored.click('#check-button');
+  assert.equal(restored.run('state.mission'),2);
+  assert.equal(restored.doc.querySelector('#theory-dialog').open,true);
 });
 
 test('second task requires independent text and image widths; max-width control sets, clears and undoes a limit',t=>{
