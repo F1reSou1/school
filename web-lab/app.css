@@ -156,6 +156,7 @@ input[type=checkbox] { width: 13px; height: 13px; margin: 0; accent-color: #486b
 .property-fields input[type=range], .style-fields input[type=range], .flex-fields input[type=range] { accent-color: #6a84aa; width: 100%; padding: 0; margin: 0; border: 0; }
 .checkbox-field { display: flex !important; flex-direction: row !important; align-items: center; gap: 7px !important; }
 .direction-buttons { display: flex; gap: 6px; }
+.flex-wrap-help { color: #87909b; font-size: 10px; line-height: 1.4; }
 .direction-buttons button { flex: 1; background: #fafbfc; border: 1px solid #dce2ea; border-radius: 4px; padding: 8px; font-size: 11px; color: #748398; }
 .direction-buttons button.active { color: #3b5d8b; background: #eef3fa; border-color: #a9bedb; }
 .position-presets { display: grid; grid-template-columns: repeat(3,1fr); gap: 5px; }

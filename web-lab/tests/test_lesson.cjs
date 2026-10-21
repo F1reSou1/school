@@ -40,7 +40,7 @@ function buildCards(ui){
 function finishThird(ui){
   ui.run(`selectPath('0.0');applyStyles({display:'flex','flex-direction':'row',gap:'24px'});selectPath('0.0.1.0');applyStyles({width:'220px'});`);
   buildCards(ui);
-  ui.run(`for(const [name,text]of Object.entries({interesting__card:'background:#f0f3f7;padding:16px;width:240px',interesting__title:'font-size:20px;color:#334455',interesting__description:'font-size:14px;color:#667788'})){const rule=document.createElement('div').style;rule.cssText=text;putClassStyle(name,rule);}updateMissions();`);
+  ui.run(`for(const [name,text]of Object.entries({interesting:'padding:16px',interesting__card:'background:#f0f3f7;padding:16px;width:240px',interesting__title:'font-size:20px;color:#334455',interesting__description:'font-size:14px;color:#667788'})){const rule=document.createElement('div').style;rule.cssText=text;putClassStyle(name,rule);}updateMissions();`);
 }
 
 test('fresh lesson opens theory; later tasks locked; every block is in the pool',t=>{
@@ -276,7 +276,7 @@ test('direct img.hero__img completes the lesson without figure and step links se
   ui.doc.querySelector('#class-dialog').close();
   ui.run(`applyStyles({width:'220px'});state.mission=2;selectPath('0.0');applyStyles({display:'flex','flex-direction':'row'});`);
   buildCards(ui);
-  ui.run(`for(const name of ['interesting__card','interesting__title','interesting__description']){const rule=document.createElement('div').style;rule.cssText='padding:4px';putClassStyle(name,rule);}updateMissions();`);
+  ui.run(`for(const name of ['interesting','interesting__card','interesting__title','interesting__description']){const rule=document.createElement('div').style;rule.cssText='padding:4px';putClassStyle(name,rule);}updateMissions();`);
   assert.equal(ui.percent(),'100%');
 });
 
@@ -326,6 +326,56 @@ test('four cards and both shared text classes required; deleting or divergent st
   assert.notEqual(ui.percent(),'100%');
   ui.run(`mutateHTML(doc=>{const p=doc.querySelector('article > div:last-child p');p.classList.add('interesting__title');p.classList.add('different');});const rule=document.createElement('div').style;rule.cssText='font-size:30px';putClassStyle('different',rule);updateMissions();`);
   assert.notEqual(ui.percent(),'100%','different effective typography rejected');
+});
+
+test('third task requires padding on the interest group and a shared padding rule for all cards',t=>{
+  const ui=editor(t);ui.click('#theory-start');finishFirst(ui);finishSecond(ui);
+  ui.run('state.mission=2;');finishThird(ui);
+  assert.equal(ui.percent(),'100%');
+  ui.run(`selectPath('0.1.1');applyStyles({padding:'0px'});missionAction();`);
+  assert.notEqual(ui.percent(),'100%');
+  assert.equal(ui.run('state.selectedPath'),'0.1.1');
+  assert.equal(ui.doc.activeElement.dataset.style,'padding','next step focuses the actual spacing control');
+  assert.match(ui.doc.querySelector('#next-step').textContent,/article.interesting/);
+  const groupPadding=ui.doc.querySelector('[data-style="padding"]');
+  groupPadding.value='16';groupPadding.dispatchEvent(new ui.win.Event('input',{bubbles:true}));
+  assert.equal(ui.percent(),'100%');
+  ui.run(`selectPath('0.1.1.0');applyStyles({padding:'0px'});missionAction();`);
+  assert.notEqual(ui.percent(),'100%');
+  assert.equal(ui.doc.activeElement.dataset.style,'padding');
+  assert.equal(ui.run('state.selectedClass'),'interesting__card');
+  const cardPadding=ui.doc.querySelector('[data-style="padding"]');
+  cardPadding.value='12';cardPadding.dispatchEvent(new ui.win.Event('input',{bubbles:true}));
+  assert.equal(ui.percent(),'100%');
+  assert.equal(ui.run(`classStyle('interesting__card').padding`),'12px');
+});
+
+test('Flexbox defaults to wrap and keeps explicit wrap, direction and gap choices when switched',t=>{
+  const ui=editor(t);ui.click('#theory-start');buildCards(ui);ui.run(`selectPath('0.1.1');`);
+  const enable=()=>{const input=ui.doc.querySelector('#property-flex-enabled');input.checked=true;input.dispatchEvent(new ui.win.Event('change',{bubbles:true}));};
+  const setWrap=value=>{const input=ui.doc.querySelector('#property-flex-wrap');input.checked=value;input.dispatchEvent(new ui.win.Event('change',{bubbles:true}));};
+  enable();
+  assert.equal(ui.run(`classStyle('interesting').display`),'flex');
+  assert.equal(ui.run(`classStyle('interesting').flexDirection`),'row');
+  assert.equal(ui.run(`classStyle('interesting').flexWrap`),'wrap');
+  setWrap(false);ui.click('[data-direction="column"]');
+  assert.equal(ui.run(`classStyle('interesting').flexWrap`),'nowrap');
+  assert.match(ui.doc.querySelector('.flex-wrap-help').textContent,/ограниченная высота/);
+  ui.click('[data-direction="row"]');
+  assert.equal(ui.run(`classStyle('interesting').flexWrap`),'nowrap');
+  ui.run(`applyStyles({gap:'24px'});`);
+  const enabled=ui.doc.querySelector('#property-flex-enabled');enabled.checked=false;enabled.dispatchEvent(new ui.win.Event('change',{bubbles:true}));
+  enable();
+  assert.equal(ui.run(`classStyle('interesting').flexWrap`),'nowrap');
+  assert.equal(ui.run(`classStyle('interesting').gap`),'24px');
+  setWrap(true);ui.click('[data-direction="column"]');ui.click('[data-direction="row"]');
+  assert.equal(ui.run(`classStyle('interesting').flexWrap`),'wrap');
+  assert.match(ui.doc.querySelector('#preview-frame').srcdoc,/flex-wrap: wrap/);
+  assert.match(ui.doc.querySelector('.flex-wrap-help').textContent,/следующую строку/);
+  ui.run('persistState()');
+  const restored=editor(t,JSON.parse(ui.win.localStorage.getItem('web-workshop-projects-v1')));
+  assert.equal(restored.doc.querySelector('#property-flex-wrap').checked,true);
+  assert.equal(restored.run(`classStyle('interesting').gap`),'24px');
 });
 
 test('empty alt is optional for the QR photo and all four interest cards',t=>{
