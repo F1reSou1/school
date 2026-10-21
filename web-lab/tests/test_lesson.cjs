@@ -28,19 +28,19 @@ function finishFirst(ui){
   ui.run(`state.lessonActions.push('page-selected');mutateHTML(doc=>{doc.querySelector('h1').textContent='Привет, я Миша.';doc.querySelector('header p').textContent='Люблю музыку.';});selectPath('0');applyStyles({background:'#e5ecf8'});`);
 }
 function buildHero(ui){
-  ui.run(`mutateHTML(doc=>{const hero=doc.querySelector('header.hero'),item=doc.createElement('div');item.className='hero_item';item.append(...hero.children);const figure=doc.createElement('figure');figure.className='hero_img';hero.append(item,figure);return figure;});imageTargetPath=state.selectedPath;installImage('data:image/jpeg;base64,/9j/2Q==','Моя картинка с телефона','phone-test');`);
+  ui.run(`mutateHTML(doc=>{const hero=doc.querySelector('header.hero'),item=doc.createElement('div');item.className='hero__item';item.append(...hero.children);const figure=doc.createElement('figure');figure.className='hero__img';hero.append(item,figure);return figure;});imageTargetPath=state.selectedPath;installImage('data:image/jpeg;base64,/9j/2Q==','Моя картинка с телефона','phone-test');`);
 }
 function finishSecond(ui){
   buildHero(ui);
-  ui.run(`applyProperty('property-alt','Моё увлечение — музыка');applyStyles({'border-radius':'8px'});`);
+  ui.run(`applyProperty('property-alt','Моё увлечение — музыка');applyStyles({'border-radius':'8px',width:'220px'});selectPath('0.0.0');applyStyles({'max-width':'360px'});selectPath('0.0.1.0');`);
 }
 function buildCards(ui){
-  ui.run(`mutateHTML(doc=>{const article=doc.createElement('article');article.className='interesting';for(let i=0;i<4;i++){const card=doc.createElement('div');card.className='interesting_card';const title=doc.createElement('p');title.className='interesting_title';title.textContent='Интерес '+(i+1);const description=doc.createElement('p');description.className='interesting_description';description.textContent='Описание моего увлечения '+(i+1);const img=doc.createElement('img');img.src='assets/music.jpg';img.alt='Моё увлечение';card.append(title,description,img);article.append(card);}doc.querySelector('#interests').append(article);});`);
+  ui.run(`mutateHTML(doc=>{const article=doc.createElement('article');article.className='interesting';for(let i=0;i<4;i++){const card=doc.createElement('div');card.className='interesting__card';const title=doc.createElement('p');title.className='interesting__title';title.textContent='Интерес '+(i+1);const description=doc.createElement('p');description.className='interesting__description';description.textContent='Описание моего увлечения '+(i+1);const img=doc.createElement('img');img.src='assets/music.jpg';img.alt='Моё увлечение';card.append(title,description,img);article.append(card);}doc.querySelector('#interests').append(article);});`);
 }
 function finishThird(ui){
   ui.run(`selectPath('0.0');applyStyles({display:'flex','flex-direction':'row',gap:'24px'});selectPath('0.0.1.0');applyStyles({width:'220px'});`);
   buildCards(ui);
-  ui.run(`for(const [name,text]of Object.entries({interesting_card:'background:#f0f3f7;padding:16px;width:240px',interesting_title:'font-size:20px;color:#334455',interesting_description:'font-size:14px;color:#667788'})){const rule=document.createElement('div').style;rule.cssText=text;putClassStyle(name,rule);}updateMissions();`);
+  ui.run(`for(const [name,text]of Object.entries({interesting__card:'background:#f0f3f7;padding:16px;width:240px',interesting__title:'font-size:20px;color:#334455',interesting__description:'font-size:14px;color:#667788'})){const rule=document.createElement('div').style;rule.cssText=text;putClassStyle(name,rule);}updateMissions();`);
 }
 
 test('fresh lesson opens theory; later tasks locked; every block is in the pool',t=>{
@@ -63,31 +63,31 @@ test('fresh lesson opens theory; later tasks locked; every block is in the pool'
 test('classes can be edited inside a block without losing focus, dragging or saving partial names',t=>{
   const ui=editor(t);ui.click('#theory-start');
   const input=ui.doc.querySelector('[data-class-path="0.0.1"]');
-  assert.equal(input.value,'intro');
+  assert.equal(input.value,'hero__intro');
   input.focus();input.click();
   assert.equal(ui.run('state.selectedPath'),'0.0.1');
   assert.equal(ui.doc.activeElement,input);
-  assert.equal(ui.doc.querySelector('#property-class').value,'intro');
+  assert.equal(ui.doc.querySelector('#property-class').value,'hero__intro');
   assert.equal(input.closest('.block-row').draggable,false);
   input.dispatchEvent(new ui.win.MouseEvent('pointerdown',{bubbles:true,button:0}));
   assert.equal(ui.run('pointerDrag'),null,'editing must not start a block drag');
-  input.value='intro interesting_description';
+  input.value='hero__intro interesting__description';
   input.dispatchEvent(new ui.win.Event('input',{bubbles:true}));
-  assert.equal(ui.run(`parseHTML().querySelector('header p').className`),'intro');
+  assert.equal(ui.run(`parseHTML().querySelector('header p').className`),'hero__intro');
   const space=new ui.win.KeyboardEvent('keydown',{key:' ',bubbles:true,cancelable:true});
   input.dispatchEvent(space);assert.equal(space.defaultPrevented,false,'space separates class names');
   input.dispatchEvent(new ui.win.KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
-  assert.equal(ui.run(`parseHTML().querySelector('header p').className`),'intro interesting_description');
+  assert.equal(ui.run(`parseHTML().querySelector('header p').className`),'hero__intro interesting__description');
   assert.equal(ui.doc.activeElement,input,'Enter retains the original input and caret');
-  assert.equal(ui.doc.querySelector('#property-class').value,'intro interesting_description');
-  assert.ok(ui.doc.querySelector('[data-edit-class="interesting_description"]'));
+  assert.equal(ui.doc.querySelector('#property-class').value,'hero__intro interesting__description');
+  assert.ok(ui.doc.querySelector('[data-edit-class="interesting__description"]'));
   input.value='unfinished';
   input.dispatchEvent(new ui.win.KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
-  assert.equal(input.value,'intro interesting_description');
-  assert.equal(ui.run(`parseHTML().querySelector('header p').className`),'intro interesting_description');
+  assert.equal(input.value,'hero__intro interesting__description');
+  assert.equal(ui.run(`parseHTML().querySelector('header p').className`),'hero__intro interesting__description');
   assert.equal(input.closest('.block-row').draggable,true);
   ui.click('#undo-button');
-  assert.equal(ui.run(`parseHTML().querySelector('header p').className`),'intro','one undo reverts the complete edit');
+  assert.equal(ui.run(`parseHTML().querySelector('header p').className`),'hero__intro','one undo reverts the complete edit');
 });
 
 test('inline blur commits reach HTML, preview and saved project; unchanged values add no undo entries',t=>{
@@ -155,34 +155,64 @@ test('100% congratulates; transition requires click and shows next theory',t=>{
   assert.match(ui.doc.querySelector('#theory-content').textContent,/скринридер/);
 });
 
-test('second task validates siblings, QR origin, alt and photo settings',t=>{
+test('second task validates siblings, QR origin and photo settings with optional alt',t=>{
   const ui=editor(t);ui.click('#theory-start');finishFirst(ui);ui.click('#check-button');ui.click('#theory-start');
   buildHero(ui);
   assert.equal(ui.percent(),'67%');
   ui.run(`applyProperty('property-alt','Моя гитара');`);
+  assert.equal(ui.percent(),'67%');
+  ui.run(`applyStyles({'border-radius':'8px',width:'220px'});`);
   assert.equal(ui.percent(),'83%');
-  ui.run(`applyStyles({'border-radius':'8px'});`);
+  ui.run(`selectPath('0.0.0');applyStyles({'max-width':'360px'});`);
   assert.equal(ui.percent(),'100%');
-  ui.run(`mutateHTML(doc=>doc.querySelector('.hero_img img').setAttribute('src','assets/music.jpg'));`);
+  ui.run(`mutateHTML(doc=>doc.querySelector('.hero__img img').setAttribute('src','assets/music.jpg'));`);
   assert.notEqual(ui.percent(),'100%','library photo cannot masquerade as QR');
-  ui.run(`mutateHTML(doc=>doc.querySelector('.hero_item').append(doc.querySelector('.hero_img')));`);
+  ui.run(`mutateHTML(doc=>doc.querySelector('.hero__item').append(doc.querySelector('.hero__img')));`);
   const checks=ui.run('lessonChecks()[1]');
   assert.equal(checks.find(item=>item.id==='hero-img').done,false,'photo block must be a sibling');
 });
 
-test('direct img.hero_img completes the lesson without figure and step links select the image',t=>{
+test('second task requires independent text and image widths; max-width control sets, clears and undoes a limit',t=>{
+  const ui=editor(t);ui.click('#theory-start');finishFirst(ui);buildHero(ui);
+  ui.run(`state.mission=1;selectPath('0.0.0');updateMissions();`);
+  assert.equal(ui.percent(),'67%');
+  const limit=ui.doc.querySelector('#max-width-value');
+  assert.equal(limit.placeholder,'Без ограничения');
+  limit.value='360';limit.dispatchEvent(new ui.win.Event('change',{bubbles:true}));
+  assert.equal(ui.percent(),'83%','the photo is still too wide');
+  assert.equal(ui.run(`classStyle('hero__item').maxWidth`),'360px');
+  assert.equal(ui.doc.querySelector('#max-width-value').value,'360');
+  ui.run(`selectPath('0.0.1.0');`);
+  const width=ui.doc.querySelector('input[data-style="width"]');
+  width.value='240';width.dispatchEvent(new ui.win.Event('input',{bubbles:true}));
+  assert.equal(ui.percent(),'100%');
+  ui.run(`selectPath('0.0.0');`);ui.click('#clear-max-width');
+  assert.equal(ui.run(`classStyle('hero__item').maxWidth`),'');
+  assert.equal(ui.percent(),'83%');
+  ui.click('#undo-button');
+  assert.equal(ui.run(`classStyle('hero__item').maxWidth`),'360px');
+  assert.equal(ui.percent(),'100%');
+  ui.run(`applyStyles({'max-width':'500px'});`);
+  assert.equal(ui.percent(),'83%','a limit wider than the task asks for is incomplete');
+  ui.run(`applyStyles({'max-width':'',width:'320px'});`);
+  assert.equal(ui.percent(),'100%','a suitably narrow width also meets the goal');
+  ui.run(`applyStyles({width:'100%'});`);
+  assert.equal(ui.percent(),'83%','percentages must not be mistaken for pixels');
+});
+
+test('direct img.hero__img completes the lesson without figure and step links select the image',t=>{
   const ui=editor(t);ui.click('#theory-start');finishFirst(ui);finishSecond(ui);
-  ui.run(`mutateHTML(doc=>{const wrapper=doc.querySelector('figure.hero_img'),image=wrapper.querySelector('img');image.classList.add('hero_img');wrapper.replaceWith(image);return image;});state.mission=1;updateMissions();`);
+  ui.run(`mutateHTML(doc=>{const wrapper=doc.querySelector('figure.hero__img'),image=wrapper.querySelector('img');image.classList.add('hero__img');wrapper.replaceWith(image);return image;});state.mission=1;updateMissions();`);
   assert.equal(ui.percent(),'100%');
   assert.equal(ui.run(`parseHTML().querySelectorAll('figure').length`),0);
-  ui.run(`applyProperty('property-alt','');missionAction();`);
+  ui.run(`applyProperty('property-alt','');applyStyles({'border-radius':'0px',width:'420px'});missionAction();`);
   assert.equal(ui.run(`resolvePath(parseHTML(),state.selectedPath).tagName`),'IMG');
   ui.run(`applyProperty('property-alt','Моя гитара');openClassDialog();`);
-  assert.equal(ui.doc.querySelector('#class-name').value,'hero_img');
+  assert.equal(ui.doc.querySelector('#class-name').value,'hero__img');
   ui.doc.querySelector('#class-dialog').close();
   ui.run(`applyStyles({width:'220px'});state.mission=2;selectPath('0.0');applyStyles({display:'flex','flex-direction':'row'});`);
   buildCards(ui);
-  ui.run(`for(const name of ['interesting_card','interesting_title','interesting_description']){const rule=document.createElement('div').style;rule.cssText='padding:4px';putClassStyle(name,rule);}updateMissions();`);
+  ui.run(`for(const name of ['interesting__card','interesting__title','interesting__description']){const rule=document.createElement('div').style;rule.cssText='padding:4px';putClassStyle(name,rule);}updateMissions();`);
   assert.equal(ui.percent(),'100%');
 });
 
@@ -228,10 +258,25 @@ test('four cards and both shared text classes required; deleting or divergent st
   assert.notEqual(ui.percent(),'100%');
   ui.run(`mutateHTML(doc=>{const cards=doc.querySelector('article');cards.append(cards.firstElementChild.cloneNode(true));});`);
   assert.equal(ui.percent(),'100%');
-  ui.run(`mutateHTML(doc=>doc.querySelector('article > div:last-child p').classList.remove('interesting_title'));`);
+  ui.run(`mutateHTML(doc=>doc.querySelector('article > div:last-child p').classList.remove('interesting__title'));`);
   assert.notEqual(ui.percent(),'100%');
-  ui.run(`mutateHTML(doc=>{const p=doc.querySelector('article > div:last-child p');p.classList.add('interesting_title');p.classList.add('different');});const rule=document.createElement('div').style;rule.cssText='font-size:30px';putClassStyle('different',rule);updateMissions();`);
+  ui.run(`mutateHTML(doc=>{const p=doc.querySelector('article > div:last-child p');p.classList.add('interesting__title');p.classList.add('different');});const rule=document.createElement('div').style;rule.cssText='font-size:30px';putClassStyle('different',rule);updateMissions();`);
   assert.notEqual(ui.percent(),'100%','different effective typography rejected');
+});
+
+test('empty alt is optional for the QR photo and all four interest cards',t=>{
+  const ui=editor(t);ui.click('#theory-start');finishFirst(ui);finishSecond(ui);
+  ui.run(`state.mission=1;applyProperty('property-alt','');updateMissions();`);
+  assert.equal(ui.percent(),'100%');
+  assert.equal(ui.run(`parseHTML().querySelector('.hero__img img').getAttribute('alt')`),'');
+  assert.match(ui.doc.querySelector('label:has(#property-alt)').textContent,/необязательно/);
+  ui.run('state.mission=2;');finishThird(ui);
+  ui.run(`mutateHTML(doc=>{doc.querySelectorAll('img').forEach(image=>image.setAttribute('alt',''));});`);
+  assert.equal(ui.percent(),'100%');
+  ui.run(`mutateHTML(doc=>{doc.querySelectorAll('img').forEach(image=>image.removeAttribute('alt'));});`);
+  assert.equal(ui.percent(),'100%','leaving alt out of handwritten HTML does not block progress');
+  ui.run(`mutateHTML(doc=>doc.querySelector('article img').removeAttribute('src'));`);
+  assert.notEqual(ui.percent(),'100%','the actual image remains required');
 });
 
 test('background belongs to page and named classes must have actual CSS rules',t=>{
@@ -260,6 +305,53 @@ test('progress and theory acknowledgement survive save/load; legacy projects pre
   assert.equal(migrated.doc.querySelector('#theory-dialog').open,true);
 });
 
+test('legacy BEM names migrate in saved work and snapshots without losing progress, photos or CSS values',t=>{
+  const ui=editor(t);ui.click('#theory-start');finishFirst(ui);finishSecond(ui);
+  ui.run('state.mission=2;');finishThird(ui);ui.run('persistState()');
+  const book=JSON.parse(ui.win.localStorage.getItem('web-workshop-projects-v1'));
+  const project=book.projects[book.activeId],legacy=project.state;
+  const names={hero__intro:'intro',hero__item:'hero_item',hero__img:'hero_img',interesting__card:'interesting_card',interesting__title:'interesting_title',interesting__description:'interesting_description'};
+  delete legacy.bemVersion;
+  for(const file of ['index.html','style.css'])for(const [name,old] of Object.entries(names))legacy.files[file]=legacy.files[file].replaceAll(name,old);
+  const doc=new ui.win.DOMParser().parseFromString(legacy.files['index.html'],'text/html');
+  doc.querySelector('.hero_item').classList.add('hero_item--wide');
+  doc.querySelector('header p').textContent='hero_item — текст, не класс';
+  legacy.files['index.html']='<!DOCTYPE html>\n'+doc.documentElement.outerHTML;
+  legacy.files['style.css']+='\n/* .hero_item remains a comment */\n@media (min-width: 1px) { .hero_item:hover, .interesting_title { outline: 1px solid red; } }\n.hero_item--wide { margin: 0; }\n.keep { background-image: url(assets/.hero_img.jpg); content: ".hero_item"; }';
+  legacy.createdClasses=['hero_item','interesting_title'];legacy.flexTouched=['hero_item'];legacy.selectedClass='hero_item';
+  project.versions=[{time:Date.now(),fingerprint:'old-snapshot',state:JSON.parse(JSON.stringify(legacy))}];
+  const photo=doc.querySelector('.hero_img img').getAttribute('src');
+  const restored=editor(t,book);
+  assert.equal(restored.percent(),'100%');
+  assert.equal(restored.run('Object.keys(library.projects).length'),1);
+  assert.equal(restored.run('state.bemVersion'),1);
+  assert.equal(restored.run(`parseHTML().querySelector('header p').textContent`),'hero_item — текст, не класс');
+  assert.equal(restored.run(`parseHTML().querySelector('.hero__img img').getAttribute('src')`),photo);
+  assert.ok(restored.run(`parseHTML().querySelector('.hero__item.hero__item--wide')`));
+  const css=restored.run(`state.files['style.css']`);
+  assert.match(css,/\.hero__item:hover, \.interesting__title/);
+  assert.match(css,/\.hero__item--wide \{/);
+  assert.ok(css.includes('url(assets/.hero_img.jpg)'));
+  assert.ok(css.includes('content: ".hero_item"'));
+  assert.ok(css.includes('/* .hero_item remains a comment */'));
+  assert.equal(restored.run(`state.createdClasses.join(',')`),'hero__item,interesting__title');
+  assert.equal(restored.run(`state.flexTouched.join(',')`),'hero__item');
+  assert.equal(restored.run(`library.projects[library.activeId].versions[0].state.bemVersion`),1);
+  restored.run('restoreVersion(library.activeId,0)');
+  assert.equal(restored.percent(),'100%');
+  assert.equal(restored.run(`parseHTML().querySelector('.hero__img img').getAttribute('src')`),photo);
+});
+
+test('lesson and checks consistently require double underscores for element names',t=>{
+  const ui=editor(t);ui.click('#theory-start');finishFirst(ui);finishSecond(ui);
+  ui.run(`state.mission=1;openTaskTheory();`);
+  assert.match(ui.doc.querySelector('#theory-content').textContent,/два подчёркивания/);
+  assert.doesNotMatch(ui.doc.querySelector('#theory-content').textContent,/одним подчёркиванием/);
+  ui.run(`mutateHTML(doc=>{const item=doc.querySelector('.hero__item');item.classList.replace('hero__item','hero_item');});updateMissions();`);
+  assert.notEqual(ui.percent(),'100%','a new project must use the taught BEM name');
+  assert.match(ui.doc.querySelector('#next-step').textContent,/hero__item/);
+});
+
 test('editing an assigned class does not create partial class names; final task cannot hide broken earlier work',t=>{
   const ui=editor(t);ui.click('#theory-start');finishFirst(ui);finishSecond(ui);
   ui.run(`state.mission=2;updateMissions();`);finishThird(ui);
@@ -274,12 +366,12 @@ test('editing an assigned class does not create partial class names; final task 
   ui.click('#theory-start');
   ui.run(`selectPath('0.0.0');`);
   const input=ui.doc.querySelector('#property-class');
-  input.value='hero_item new_item';
+  input.value='hero__item new__item';
   input.dispatchEvent(new ui.win.Event('input',{bubbles:true}));
-  assert.equal(ui.run(`parseHTML().querySelector('.hero_item').classList.contains('new_item')`),false);
+  assert.equal(ui.run(`parseHTML().querySelector('.hero__item').classList.contains('new__item')`),false);
   input.dispatchEvent(new ui.win.Event('change',{bubbles:true}));
-  assert.equal(ui.run(`parseHTML().querySelector('.hero_item').classList.contains('new_item')`),true);
-  assert.ok(ui.doc.querySelector('[data-edit-class="new_item"]'));
+  assert.equal(ui.run(`parseHTML().querySelector('.hero__item').classList.contains('new__item')`),true);
+  assert.ok(ui.doc.querySelector('[data-edit-class="new__item"]'));
 });
 
 // Transport-only test double: HTTP isolation itself is tested against the real

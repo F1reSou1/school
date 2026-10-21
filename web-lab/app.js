@@ -27,7 +27,7 @@ const INITIAL_HTML = `<!DOCTYPE html>
     <main class="page">
       <header class="hero">
         <h1>Привет, я …</h1>
-        <p class="intro">Напиши пару слов о себе или о придуманном герое.</p>
+        <p class="hero__intro">Напиши пару слов о себе или о придуманном герое.</p>
       </header>
       <section id="interests" class="interests">
         <h2>Мои интересы</h2>
@@ -50,7 +50,7 @@ body {
 h1 { font-size: 38px; line-height: 1.15; margin: 0 0 16px; }
 h2 { font-size: 26px; margin: 0 0 20px; }
 p { font-size: 16px; margin: 0 0 16px; }
-.intro { color: #6b737e; }
+.hero__intro { color: #6b737e; }
 .interests { margin-bottom: 32px; }
 figure { margin: 0; }
 img { max-width: 100%; }
@@ -81,8 +81,36 @@ const SEMANTICS = {
 };
 const MISSIONS = WorkshopLesson.lessons;
 function newId(){return crypto.randomUUID?.() || Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);}
-function freshState(){return {name:'Моя страница',files:{'index.html':INITIAL_HTML,'style.css':INITIAL_CSS},currentFile:'index.html',mode:'blocks',selectedPath:'0.0.0',selectedClass:null,createdClasses:[],flexTouched:[],imagesChosen:[],lastManualFingerprint:null,theme:'fresh',mission:0,lessonStarted:[],lessonActions:[],qrImages:[]};}
+const LEGACY_BEM_CLASSES={intro:'hero__intro',hero_item:'hero__item',hero_img:'hero__img',interesting_card:'interesting__card',interesting_title:'interesting__title',interesting_description:'interesting__description'};
+function freshState(){return {bemVersion:1,name:'Моя страница',files:{'index.html':INITIAL_HTML,'style.css':INITIAL_CSS},currentFile:'index.html',mode:'blocks',selectedPath:'0.0.0',selectedClass:null,createdClasses:[],flexTouched:[],imagesChosen:[],lastManualFingerprint:null,theme:'fresh',mission:0,lessonStarted:[],lessonActions:[],qrImages:[]};}
 function clone(value){return JSON.parse(JSON.stringify(value));}
+function migrateBEMClasses(value){
+  const rename=name=>{
+    if(typeof name!=='string')return name;
+    const base=name.split('--',1)[0];
+    return Object.hasOwn(LEGACY_BEM_CLASSES,base)?LEGACY_BEM_CLASSES[base]+name.slice(base.length):name;
+  };
+  const doc=parseHTML(value.files['index.html']);let changed=false;
+  for(const node of doc.querySelectorAll('[class]')){
+    const names=[...node.classList],updated=names.map(rename);
+    if(names.some((name,i)=>name!==updated[i])){node.setAttribute('class',[...new Set(updated)].join(' '));changed=true;}
+  }
+  if(changed)value.files['index.html']=serializeHTML(doc);
+  // Rename class tokens in selectors, preserving CSS values, strings and comments.
+  const css=value.files['style.css'],edits=[];let pending=[];
+  const tokens=/\/\*[\s\S]*?\*\/|"(?:\\[\s\S]|[^"\\])*"|'(?:\\[\s\S]|[^'\\])*'|[;{}]|\.([A-Za-z_][\w-]*)/g;
+  for(const match of css.matchAll(tokens)){
+    if(match[0]==='{'){edits.push(...pending);pending=[];}
+    else if(match[0]===';'||match[0]==='}')pending=[];
+    if(match[1]&&rename(match[1])!==match[1])pending.push({start:match.index+1,end:match.index+match[0].length,value:rename(match[1])});
+  }
+  let updatedCSS=css;
+  for(const edit of edits.reverse())updatedCSS=updatedCSS.slice(0,edit.start)+edit.value+updatedCSS.slice(edit.end);
+  value.files['style.css']=updatedCSS;
+  value.selectedClass=rename(value.selectedClass);
+  for(const field of ['createdClasses','flexTouched'])value[field]=[...new Set(value[field].map(rename))];
+  if(changed||updatedCSS!==css)value.lastManualFingerprint=null;
+}
 function hydrate(value){
   const clean=freshState(); if(!value || typeof value!=='object') return clean;
   if(value.files && typeof value.files['index.html']==='string' && typeof value.files['style.css']==='string') clean.files=Object.fromEntries(FILE_ORDER.filter(f=>typeof value.files[f]==='string').map(f=>[f,value.files[f]]));
@@ -94,6 +122,7 @@ function hydrate(value){
   if(!(clean.currentFile in clean.files)) clean.currentFile='index.html';
   if(!THEMES[clean.theme]) clean.theme='fresh';
   if(!['blocks','code'].includes(clean.mode)) clean.mode='blocks';
+  if(value.bemVersion!==1)migrateBEMClasses(clean);
   return clean;
 }
 function readLibrary(){
@@ -223,7 +252,7 @@ function renderTree(properties = true) {
     const itemCount=node.children.length+textNodes.length;
     const children=container?[...node.childNodes].map(child=>child.nodeType===1?row(child,nodePath(child,doc.body),depth+1):child.nodeType===3&&child.textContent.trim()?`<div class="direct-text">${escapeHTML(child.textContent.trim())}</div>`:'').join(''):'';
     const collapsed=container&&(collapsedNodes.has(path)||(!node.children.length&&!expandedEmptyNodes.has(path)));
-    return `<div class="tree-node ${container?'container-node':''} ${itemCount===0?'empty-node':''} ${collapsed?'scope-collapsed':''}" data-node-path="${path}" style="--level:${depth%4}"><div class="drop-line" data-drop="before" data-path="${path}"></div><div class="block-heading">${container?`<button class="fold-button" data-fold="${path}" aria-expanded="${!collapsed}" aria-label="${collapsed?'Раскрыть':'Свернуть'} ${tag}">${collapsed?'›':'⌄'}</button>`:'<span class="leaf-mark">·</span>'}<div class="block-row ${selected?'selected':''}" draggable="true" data-path="${path}" data-container="${container}" role="group" aria-label="${escapeHTML(tag)}"><button type="button" class="block-select" aria-label="${escapeHTML(tag+': '+summary.slice(0,70))}" aria-pressed="${selected}"><span class="tag-name ${container?'container':''}">&lt;${tag}&gt;</span><span class="node-summary">${escapeHTML(summary)}</span></button><input class="node-class-input" data-class-path="${path}" value="${escapeHTML(className)}" placeholder="класс" aria-label="CSS-классы элемента ${tag}" title="CSS-классы без точки, через пробел. Enter — сохранить, Esc — отменить." autocomplete="off" autocapitalize="off" spellcheck="false">${container?'<span class="scope-inline" aria-hidden="true">{ }</span>':''}<div class="block-row-actions"><button type="button" data-clear-block-classes="${path}" ${className?'':'disabled'}>Снять классы</button><button type="button" data-delete-block="${path}" class="delete-block-button">Удалить блок</button></div></div></div>${container?`<div class="scope-content"><div class="scope-open" data-drop="inside" data-path="${path}" aria-hidden="true">{ </div><div class="scope-body" data-drop="inside" data-path="${path}">${children}<div class="nesting-drop" data-drop="inside" data-path="${path}">+ Вложить в &lt;${tag}&gt;</div></div><div class="scope-close" data-drop="inside" data-path="${path}"><b>}</b><span>&lt;/${tag}&gt;</span></div></div>`:''}<div class="drop-line" data-drop="after" data-path="${path}"></div></div>`;
+    return `<div class="tree-node ${container?'container-node':''} ${itemCount===0?'empty-node':''} ${collapsed?'scope-collapsed':''}" data-node-path="${path}" style="--level:${depth%4}"><div class="drop-line" data-drop="before" data-path="${path}"></div><div class="block-heading">${container?`<button class="fold-button" data-fold="${path}" aria-expanded="${!collapsed}" aria-label="${collapsed?'Раскрыть':'Свернуть'} ${tag}">${collapsed?'›':'⌄'}</button>`:'<span class="leaf-mark">·</span>'}<div class="block-row ${selected?'selected':''}" draggable="true" data-path="${path}" data-container="${container}" role="group" aria-label="${escapeHTML(tag)}"><button type="button" class="block-select" aria-label="${escapeHTML(tag+': '+summary.slice(0,70))}" aria-pressed="${selected}"><span class="tag-name ${container?'container':''}">&lt;${tag}&gt;</span><span class="node-summary">${escapeHTML(summary)}</span></button><input class="node-class-input" data-class-path="${path}" value="${escapeHTML(className)}" placeholder="класс" aria-label="CSS-классы элемента ${tag}" title="Например hero__item. CSS-классы без точки, через пробел. Enter — сохранить, Esc — отменить." autocomplete="off" autocapitalize="off" spellcheck="false">${container?'<span class="scope-inline" aria-hidden="true">{ }</span>':''}<div class="block-row-actions"><button type="button" data-clear-block-classes="${path}" ${className?'':'disabled'}>Снять классы</button><button type="button" data-delete-block="${path}" class="delete-block-button">Удалить блок</button></div></div></div>${container?`<div class="scope-content"><div class="scope-open" data-drop="inside" data-path="${path}" aria-hidden="true">{ </div><div class="scope-body" data-drop="inside" data-path="${path}">${children}<div class="nesting-drop" data-drop="inside" data-path="${path}">+ Вложить в &lt;${tag}&gt;</div></div><div class="scope-close" data-drop="inside" data-path="${path}"><b>}</b><span>&lt;/${tag}&gt;</span></div></div>`:''}<div class="drop-line" data-drop="after" data-path="${path}"></div></div>`;
   }
   $('#block-tree').innerHTML=[...doc.body.children].filter(node=>node.tagName!=='SCRIPT').map(node=>row(node,nodePath(node,doc.body),0)).join('');
   if(properties)renderProperties(doc);
@@ -254,15 +283,16 @@ function renderProperties(doc=parseHTML()){
   let fields=editable?`<label>${isList?'Пункты · один на строку':'Содержимое'}${isList||tag==='p'||value.length>80?`<textarea id="property-text" rows="3">${escapeHTML(value)}</textarea>`:`<input id="property-text" value="${escapeHTML(value)}">`}</label>`:'';
   if(container)fields+=`<label>Тег<select id="semantic-tag">${Object.keys(SEMANTICS).map(t=>`<option value="${t}" ${t===tag?'selected':''}>${t} — ${({main:'главное',header:'вступление',section:'раздел',footer:'завершение',figure:'картинка',div:'нейтральный блок',article:'история',nav:'навигация',aside:'дополнение'})[t]}</option>`).join('')}</select></label>`;
   if(tag==='a')fields+=`<label>Адрес ссылки · href<input id="property-href" value="${escapeHTML(node.getAttribute('href')||'')}"></label>`;
-  if(tag==='img')fields+=`<img class="image-property-thumb" src="${escapeHTML(node.getAttribute('src')||'')}" alt="Текущая картинка"><button id="property-image" class="image-choose-button">Заменить картинку</button><label>Описание · alt<input id="property-alt" value="${escapeHTML(node.getAttribute('alt')||'')}" placeholder="Что изображено?"></label>`;
+  if(tag==='img')fields+=`<img class="image-property-thumb" src="${escapeHTML(node.getAttribute('src')||'')}" alt="Текущая картинка"><button id="property-image" class="image-choose-button">Заменить картинку</button><label>Описание · alt (необязательно)<input id="property-alt" value="${escapeHTML(node.getAttribute('alt')||'')}" placeholder="Можно оставить пустым"></label>`;
   if(tag==='img'){const imageStyle=computedBlockStyle(node);fields+=slider('width','Ширина картинки',parseInt(imageStyle.width)||420,60,420);}
-  fields+=`<label>CSS-классы<div class="class-field-row"><input id="property-class" value="${escapeHTML(node.getAttribute('class')||'')}" list="class-list" placeholder="имя класса"><button id="property-new-class" aria-label="Создать CSS-класс" title="Создать общий класс">+</button></div><datalist id="class-list">${findClasses().map(name=>`<option value="${escapeHTML(name)}"></option>`).join('')}</datalist>${validClasses(node).length?`<div class="assigned-classes">${validClasses(node).map(name=>`<span class="assigned-class"><button data-edit-class="${name}">.${name}</button><button class="remove-class-button" data-remove-class="${name}" aria-label="Снять класс ${name} с блока" title="Снять класс с этого блока">Снять</button></span>`).join('')}</div>`:''}</label>`;
+  fields+=`<label>CSS-классы<div class="class-field-row"><input id="property-class" value="${escapeHTML(node.getAttribute('class')||'')}" list="class-list" placeholder="блок__элемент"><button id="property-new-class" aria-label="Создать CSS-класс" title="Создать общий класс">+</button></div><datalist id="class-list">${findClasses().map(name=>`<option value="${escapeHTML(name)}"></option>`).join('')}</datalist>${validClasses(node).length?`<div class="assigned-classes">${validClasses(node).map(name=>`<span class="assigned-class"><button data-edit-class="${name}">.${name}</button><button class="remove-class-button" data-remove-class="${name}" aria-label="Снять класс ${name} с блока" title="Снять класс с этого блока">Снять</button></span>`).join('')}</div>`:''}</label>`;
   const parents=[...doc.body.querySelectorAll('*')].filter(el=>CONTAINERS.has(el.tagName.toLowerCase())&&el!==node&&!node.contains(el));
   fields+=`<label>Родитель<select id="parent-container"><option value="" ${node.parentElement===doc.body?'selected':''}>body — корень страницы</option>${parents.map(el=>{const path=nodePath(el,doc.body);return `<option value="${path}" ${el===node.parentElement?'selected':''}>${'· '.repeat(path.split('.').length-1)}${el.tagName.toLowerCase()}${el.className?'.'+el.className.trim().split(/\s+/).join('.'):''}</option>`;}).join('')}</select></label>`;
   const theme=THEMES[state.theme],name=activeClass(node),names=validClasses(node),style=name?classStyle(name):computedBlockStyle(node);
   const font=parseInt(style.fontSize)||({h1:46,h2:24,h3:20,span:12}[tag]||16),padding=parseInt(style.padding)||0,radius=parseInt(style.borderRadius)||0;
   const color=hexColor(style.color,theme.ink),background=hexColor(style.backgroundColor,theme.card);
-  const styleFields=`<details class="inspector-section" ${container&&state.mission!==0?'':'open'}><summary>Оформление</summary><div class="style-fields"><details class="model-details"><summary>Блочная модель</summary><div class="box-model" aria-label="Блочная модель"><span>margin · снаружи</span><div><span>border · граница</span><div><span>padding · внутри</span><b>Содержимое &lt;${tag}&gt;</b></div></div></div></details><label>Стиль класса<select id="style-rule-target"><option value="">Отдельный стиль блока</option>${names.map(n=>`<option value="${n}" ${n===name?'selected':''}>.${n}</option>`).join('')}</select></label><div id="style-target-note" class="style-target-note">${name?'.'+escapeHTML(name):'Новый класс'}</div>${tag!=='img'?`<div class="field-pair"><label>Текст<div class="color-control"><input type="color" value="${color}" data-style="color" aria-label="Цвет текста"><span>${color}</span></div></label><label>Фон<div class="color-control"><input type="color" value="${background}" data-style="background" aria-label="Цвет фона"><span>${style.backgroundColor==='transparent'?'нет':background}</span></div></label></div>${slider('font-size','Размер текста',font,10,72)}`:''}${slider('padding','Внутренний отступ',padding,0,64)}${slider('border-radius','Скругление',radius,0,40)}${container?slider('width','Ширина блока',parseInt(style.width)||240,100,640):''}${tag!=='img'?selectControl('text-align-control','text-align','Текст',style.textAlign||'left',[['left','Слева'],['center','По центру'],['right','Справа']]):''}${tag==='img'?selectControl('image-ratio-control','aspect-ratio','Пропорции',style.aspectRatio||'auto',[['auto','Исходные'],['16 / 9','16:9'],['1 / 1','1:1'],['3 / 4','3:4']])+selectControl('image-fit-control','object-fit','Вписать картинку',style.objectFit||'contain',[['contain','Целиком'],['cover','Заполнить рамку']]):''}</div></details>`;
+  const widthLimit=container?`<label>Макс. ширина блока, px<div class="width-limit-control"><input id="max-width-value" class="width-limit-value" type="number" min="1" step="1" value="${/^\d+(?:\.\d+)?px$/.test(style.maxWidth)?parseFloat(style.maxWidth):''}" placeholder="${escapeHTML(style.maxWidth&&style.maxWidth!=='none'?style.maxWidth:'Без ограничения')}" aria-label="Максимальная ширина блока"><button id="clear-max-width" type="button" ${style.maxWidth&&style.maxWidth!=='none'?'':'disabled'}>Сбросить</button></div><small>Блок может быть уже, но не шире этого значения.</small></label>`:'';
+  const styleFields=`<details class="inspector-section" ${container&&state.mission!==0?'':'open'}><summary>Оформление</summary><div class="style-fields"><details class="model-details"><summary>Блочная модель</summary><div class="box-model" aria-label="Блочная модель"><span>margin · снаружи</span><div><span>border · граница</span><div><span>padding · внутри</span><b>Содержимое &lt;${tag}&gt;</b></div></div></div></details><label>Стиль класса<select id="style-rule-target"><option value="">Отдельный стиль блока</option>${names.map(n=>`<option value="${n}" ${n===name?'selected':''}>.${n}</option>`).join('')}</select></label><div id="style-target-note" class="style-target-note">${name?'.'+escapeHTML(name):'Новый класс'}</div>${tag!=='img'?`<div class="field-pair"><label>Текст<div class="color-control"><input type="color" value="${color}" data-style="color" aria-label="Цвет текста"><span>${color}</span></div></label><label>Фон<div class="color-control"><input type="color" value="${background}" data-style="background" aria-label="Цвет фона"><span>${style.backgroundColor==='transparent'?'нет':background}</span></div></label></div>${slider('font-size','Размер текста',font,10,72)}`:''}${slider('padding','Внутренний отступ',padding,0,64)}${slider('border-radius','Скругление',radius,0,40)}${container?slider('width','Ширина блока',parseInt(style.width)||240,100,640):''}${widthLimit}${tag!=='img'?selectControl('text-align-control','text-align','Текст',style.textAlign||'left',[['left','Слева'],['center','По центру'],['right','Справа']]):''}${tag==='img'?selectControl('image-ratio-control','aspect-ratio','Пропорции',style.aspectRatio||'auto',[['auto','Исходные'],['16 / 9','16:9'],['1 / 1','1:1'],['3 / 4','3:4']])+selectControl('image-fit-control','object-fit','Вписать картинку',style.objectFit||'contain',[['contain','Целиком'],['cover','Заполнить рамку']]):''}</div></details>`;
   const flexOn=style.display==='flex',direction=style.flexDirection||'row',gap=Number.parseInt(style.gap)||0,justify=style.justifyContent||'flex-start',align=style.alignItems||'stretch';
   const flexFields=container?`<details class="inspector-section" open><summary>Расположение · Flexbox</summary><div class="flex-fields"><label class="checkbox-field"><input id="property-flex-enabled" type="checkbox" ${flexOn?'checked':''}> Включить Flexbox</label><div class="direction-buttons"><button data-direction="row" class="${flexOn&&direction==='row'?'active':''}">↔ В ряд</button><button data-direction="column" class="${flexOn&&direction==='column'?'active':''}">↕ Колонка</button></div>${slider('gap','Расстояние',gap,0,48)}${selectControl('justify-control','justify-content','justify-content · '+(direction==='row'?'↔ горизонталь':'↕ вертикаль'),justify,[['flex-start','В начале'],['center','По центру'],['space-between','Между краями'],['space-evenly','Равномерно'],['flex-end','В конце']])}${selectControl('align-control','align-items','align-items · '+(direction==='row'?'↕ вертикаль':'↔ горизонталь'),align,[['stretch','Растянуть'],['flex-start','В начале'],['center','По центру'],['flex-end','В конце']])}<div class="position-presets"><span>Положение</span><button data-position="center">Центр</button><button data-position="left">Слева</button><button data-position="bottom">Снизу</button></div><label class="checkbox-field"><input id="property-flex-wrap" type="checkbox" ${style.flexWrap==='wrap'?'checked':''}> Перенос · wrap</label></div></details>`:`<div class="flex-parent-link"><button id="jump-to-flex">Расположение у родителя →</button></div>`;
   const trail=[];let ancestor=node;while(ancestor&&ancestor!==doc.body){trail.unshift(`<button data-select-path="${nodePath(ancestor,doc.body)}">${ancestor.tagName.toLowerCase()}</button>`);ancestor=ancestor.parentElement;}
@@ -300,7 +330,7 @@ function commitBlockClass(input){
 function jumpToFlex(){
   const doc=parseHTML(),selected=resolvePath(doc,state.selectedPath);
   const parent=selected?.parentElement;
-  const node=parent&&CONTAINERS.has(parent.tagName.toLowerCase())?parent:doc.querySelector('.hero_img')||doc.querySelector('img')?.parentElement;
+  const node=parent&&CONTAINERS.has(parent.tagName.toLowerCase())?parent:doc.querySelector('.hero__img')||doc.querySelector('img')?.parentElement;
   if(node)selectPath(nodePath(node,doc.body));
 }
 function missionAction(){
@@ -461,7 +491,7 @@ function applyProperty(id, value) {
       } else node.textContent = value;
     } else {
       const attr = ({ 'property-class': 'class', 'property-href': 'href', 'property-src': 'src', 'property-alt':'alt' })[id];
-      if (attr) { if (value.trim()) node.setAttribute(attr, value.trim()); else node.removeAttribute(attr); }
+      if (attr) { if (value.trim()||attr==='alt') node.setAttribute(attr, value.trim()); else node.removeAttribute(attr); }
     }
     return node;
   });
@@ -501,7 +531,7 @@ function openClassDialog() {
   $('#class-flex').checked=existing?classStyle(existing).display==='flex':false;
   $('#class-direction').value=existing?classStyle(existing).flexDirection||'row':'row';
   $('#class-gap').value=existing?parseInt(classStyle(existing).gap)||16:16;
-  const suggested=state.mission===1?(['FIGURE','IMG'].includes(node?.tagName)?'hero_img':'hero_item'):state.mission===2?(node?.tagName==='ARTICLE'?'interesting':node?.tagName==='P'?'interesting_title':'interesting_card'):'my-style';
+  const suggested=state.mission===1?(['FIGURE','IMG'].includes(node?.tagName)?'hero__img':'hero__item'):state.mission===2?(node?.tagName==='ARTICLE'?'interesting':node?.tagName==='P'?'interesting__title':'interesting__card'):'my-style';
   $('#class-name').value=existing||suggested;
   if (state.createdClasses.includes(existing)) {
     classEditingName = existing;
@@ -517,7 +547,7 @@ function openClassDialog() {
 }
 function saveClass(event) {
   event.preventDefault(); const name = $('#class-name').value.trim();
-  if (!/^[A-Za-z_][\w-]*$/.test(name)) { toast('Назови класс латиницей, без точки и пробелов. Например: my-style.'); return; }
+  if (!/^[A-Za-z_][\w-]*$/.test(name)) { toast('Назови класс латиницей, без точки и пробелов. Например: hero__item.'); return; }
   const classNumbers = ['class-padding', 'class-radius', 'class-size'].map((id) => Number($('#' + id).value));
   if (classNumbers.some((v) => !Number.isFinite(v))) return;
   checkpoint(); ensureDraft();
@@ -664,6 +694,7 @@ document.addEventListener('click',event=>{
   const editClass=target.closest('[data-edit-class]');if(editClass){state.selectedClass=editClass.dataset.editClass;if(state.selectedClass==='page'&&!state.lessonActions.includes('page-selected'))state.lessonActions.push('page-selected');renderProperties();$('#style-rule-target')?.closest('details')?.setAttribute('open','');updateMissions();saveDraft();}
   if(target.closest('#property-new-class'))openClassDialog();
   if(target.closest('#property-image'))openGallery();
+  if(target.closest('#clear-max-width'))applyStyles({'max-width':''});
   if(target.closest('#jump-to-flex'))jumpToFlex();
   const filter=target.closest('[data-gallery-filter]');if(filter){galleryFilter=filter.dataset.galleryFilter;renderGallery();}
   const image=target.closest('[data-image]');if(image)chooseImage(image.dataset.image);
@@ -743,6 +774,11 @@ $('#element-properties').addEventListener('input',event=>{
 });
 $('#element-properties').addEventListener('change',event=>{
   const target=event.target;
+  if(target.id==='max-width-value'){
+    if(!target.value)applyStyles({'max-width':''});
+    else if(target.checkValidity())applyStyles({'max-width':target.value+'px'});
+    else target.reportValidity();
+  }
   if(target.id==='property-class')applyProperty(target.id,target.value);
   if(target.id==='semantic-tag')applyProperty(target.id,target.value);
   if(target.id==='parent-container'){const path=target.value;mutateHTML(doc=>{const node=resolvePath(doc,state.selectedPath),parent=path?resolvePath(doc,path):doc.body;if(!node||!parent||node===parent||node.contains(parent))return;parent.append(node);return node;},{announce:'Вложенность изменена. Посмотри на скобки в структуре.'});}
