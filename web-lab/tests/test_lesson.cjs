@@ -275,8 +275,24 @@ test('empty alt is optional for the QR photo and all four interest cards',t=>{
   assert.equal(ui.percent(),'100%');
   ui.run(`mutateHTML(doc=>{doc.querySelectorAll('img').forEach(image=>image.removeAttribute('alt'));});`);
   assert.equal(ui.percent(),'100%','leaving alt out of handwritten HTML does not block progress');
-  ui.run(`mutateHTML(doc=>doc.querySelector('article img').removeAttribute('src'));`);
+  ui.run(`mutateHTML(doc=>doc.querySelectorAll('article img').forEach((image,index)=>{if(index<3)image.removeAttribute('src');}));`);
   assert.notEqual(ui.percent(),'100%','the actual image remains required');
+});
+
+test('two pictures in different cards complete task three; two pictures in one card do not',t=>{
+  const ui=editor(t);ui.click('#theory-start');finishFirst(ui);finishSecond(ui);
+  ui.run('state.mission=2;');finishThird(ui);
+  ui.run(`mutateHTML(doc=>{doc.querySelectorAll('article > div').forEach((card,index)=>{if(index===0||index===2)card.querySelector('img').remove();});});`);
+  assert.equal(ui.percent(),'100%','pictures can be in any two of the four cards');
+  ui.run(`mutateHTML(doc=>doc.querySelector('article > div:last-child img').remove());`);
+  assert.notEqual(ui.percent(),'100%');
+  assert.match(ui.doc.querySelector('#next-step').textContent,/ещё в одну карточку/);
+  ui.run(`mutateHTML(doc=>{const picture=doc.querySelector('article img');picture.after(picture.cloneNode());});`);
+  assert.notEqual(ui.percent(),'100%','two images in the same card count as one pictured card');
+  ui.run('missionAction()');
+  assert.equal(ui.run('state.selectedPath'),'0.1.1.0','next step selects an unpictured card');
+  ui.run(`mutateHTML(doc=>{const figure=doc.createElement('figure');figure.append(doc.querySelector('article img').cloneNode());doc.querySelector('article > div:last-child').append(figure);});`);
+  assert.equal(ui.percent(),'100%','an image inside figure also counts');
 });
 
 test('background belongs to page and named classes must have actual CSS rules',t=>{
