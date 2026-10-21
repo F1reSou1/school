@@ -141,6 +141,70 @@ test('explicit delete block buttons remove the chosen subtree and undo restores 
   assert.equal(ui.run(`parseHTML().querySelector('header')`),null,'inspector delete uses the same operation');
 });
 
+test('padding, rounded corners and background controls are available for every lesson element',t=>{
+  const ui=editor(t);ui.click('#theory-start');buildHero(ui);buildCards(ui);
+  for(const tag of ['main','header','div','h1','p','section','h2','article','figure','footer','img']){
+    ui.run(`{const doc=parseHTML();selectPath(nodePath(doc.querySelector(${JSON.stringify(tag)}),doc.body));}`);
+    const padding=ui.doc.querySelector('[data-style="padding"]');
+    assert.equal(padding.closest('details').open,true,tag+' has visible padding controls');
+    assert.equal(ui.doc.querySelectorAll('[data-padding-side]').length,4);
+    padding.value='7';padding.dispatchEvent(new ui.win.Event('input',{bubbles:true}));
+    padding.dispatchEvent(new ui.win.Event('change',{bubbles:true}));
+    const radius=ui.doc.querySelector('[data-style="border-radius"]');
+    radius.value='17';radius.dispatchEvent(new ui.win.Event('input',{bubbles:true}));
+    radius.dispatchEvent(new ui.win.Event('change',{bubbles:true}));
+    assert.equal(ui.run(`computedBlockStyle(resolvePath(parseHTML(),state.selectedPath)).padding`),'7px',tag);
+    assert.equal(ui.run(`computedBlockStyle(resolvePath(parseHTML(),state.selectedPath)).borderRadius`),'17px',tag);
+    assert.ok(ui.doc.querySelector('[data-style="background"]'),tag+' supports background color');
+    assert.ok(ui.doc.querySelector('[data-background-transparency]'),tag+' supports background transparency');
+  }
+});
+
+test('individual padding preserves other sides; uniform padding synchronizes fields and undoes in one step',t=>{
+  const ui=editor(t);ui.click('#theory-start');ui.run(`selectPath('0');`);
+  const top=ui.doc.querySelector('[data-padding-side="padding-top"]');
+  assert.equal(top.value,'36');top.value='0';
+  top.dispatchEvent(new ui.win.Event('change',{bubbles:true}));
+  assert.equal(ui.run(`classStyle('page').paddingTop`),'0px');
+  assert.equal(ui.run(`classStyle('page').paddingRight`),'36px');
+  assert.equal(ui.doc.querySelector('[data-padding-output]').textContent,'Разные');
+  const before=ui.run('history.length'),padding=ui.doc.querySelector('[data-style="padding"]');
+  padding.value='16';padding.dispatchEvent(new ui.win.Event('input',{bubbles:true}));
+  padding.dispatchEvent(new ui.win.Event('change',{bubbles:true}));
+  assert.equal(ui.run('history.length'),before+1,'releasing a slider must not add a duplicate undo entry');
+  assert.deepEqual([...ui.doc.querySelectorAll('[data-padding-side]')].map(input=>input.value),['16','16','16','16']);
+  assert.equal(ui.run(`classStyle('page').padding`),'16px');
+  ui.click('#undo-button');
+  assert.equal(ui.run(`classStyle('page').paddingTop`),'0px');
+  assert.equal(ui.run(`classStyle('page').paddingBottom`),'36px');
+  ui.run('persistState()');
+  const restored=editor(t,JSON.parse(ui.win.localStorage.getItem('web-workshop-projects-v1')));
+  assert.equal(restored.doc.querySelector('[data-padding-side="padding-top"]').value,'0');
+  assert.equal(restored.doc.querySelector('[data-padding-side="padding-bottom"]').value,'36');
+});
+
+test('background transparency preserves color and affects the background alone across save and reload',t=>{
+  const ui=editor(t);ui.click('#theory-start');ui.run(`selectPath('0.0');`);
+  const color=ui.doc.querySelector('[data-style="background"]');
+  color.value='#336699';color.dispatchEvent(new ui.win.Event('input',{bubbles:true}));
+  const transparency=ui.doc.querySelector('[data-background-transparency]');
+  transparency.value='40';transparency.dispatchEvent(new ui.win.Event('input',{bubbles:true}));
+  assert.equal(ui.run(`classStyle('hero').backgroundColor`),'rgba(51, 102, 153, 0.6)');
+  assert.equal(ui.run(`classStyle('hero').opacity`),'','text and images must not inherit a faded container');
+  color.value='#ff0000';color.dispatchEvent(new ui.win.Event('input',{bubbles:true}));
+  assert.equal(ui.run(`classStyle('hero').backgroundColor`),'rgba(255, 0, 0, 0.6)');
+  transparency.value='100';transparency.dispatchEvent(new ui.win.Event('input',{bubbles:true}));
+  assert.equal(ui.run(`classStyle('hero').backgroundColor`),'rgba(255, 0, 0, 0)');
+  transparency.value='0';transparency.dispatchEvent(new ui.win.Event('input',{bubbles:true}));
+  assert.equal(ui.run(`classStyle('hero').backgroundColor`),'rgb(255, 0, 0)');
+  transparency.value='40';transparency.dispatchEvent(new ui.win.Event('input',{bubbles:true}));
+  ui.run('persistState()');
+  const restored=editor(t,JSON.parse(ui.win.localStorage.getItem('web-workshop-projects-v1')));
+  assert.equal(restored.doc.querySelector('[data-background-transparency]').value,'40');
+  assert.equal(restored.doc.querySelector('[data-style="background"]').value,'#ff0000');
+  assert.match(restored.doc.querySelector('#preview-frame').srcdoc,/rgba\(255, 0, 0, 0\.6\)/);
+});
+
 test('100% congratulates; transition requires click and shows next theory',t=>{
   const ui=editor(t);ui.click('#theory-start');finishFirst(ui);
   assert.equal(ui.percent(),'100%');

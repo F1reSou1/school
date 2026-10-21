@@ -274,6 +274,31 @@ function activeClass(node){if(state.selectedClass==='__own__')return null;const 
 function styleValue(node,property,fallback){const name=activeClass(node);return name?classStyle(name).getPropertyValue(property).trim()||fallback:fallback;}
 function hexColor(value,fallback){if(/^#[\da-f]{6}$/i.test(value))return value;const numbers=value.match(/^rgba?\((\d+)[, ]+(\d+)[, ]+(\d+)/);return numbers?'#'+numbers.slice(1,4).map(v=>Number(v).toString(16).padStart(2,'0')).join(''):fallback;}
 function slider(property,title,value,min,max){return `<label><span class="slider-label-row"><span>${title}</span><output>${value} px</output></span><input type="range" min="${min}" max="${max}" value="${value}" data-style="${property}" data-unit="px" aria-label="${title}"></label>`;}
+function paddingControls(style){
+  const sides=[['top','Сверху'],['right','Справа'],['bottom','Снизу'],['left','Слева']];
+  const values=sides.map(([side])=>parseFloat(style.getPropertyValue('padding-'+side))||0);
+  const same=values.every(value=>value===values[0]),maximum=Math.max(128,...values);
+  return `<div class="padding-controls"><b>Внутренние отступы · padding, px</b><label><span class="slider-label-row"><span>Все стороны</span><output data-padding-output>${same?values[0]+' px':'Разные'}</output></span><input type="range" min="0" max="${maximum}" value="${values[0]}" data-style="padding" data-unit="px" aria-label="Все внутренние отступы"></label><div class="padding-sides">${sides.map(([side,label],i)=>`<label>${label}<input type="number" min="0" step="1" value="${values[i]}" data-padding-side="padding-${side}" aria-label="Внутренний отступ: ${label.toLowerCase()}"></label>`).join('')}</div></div>`;
+}
+function backgroundTransparency(style){
+  if(style.backgroundColor==='transparent')return 100;
+  const alpha=style.backgroundColor.match(/^rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)$/)?.[1];
+  return alpha===undefined?0:Math.round((1-Number(alpha))*100);
+}
+function backgroundWithTransparency(color,transparency){
+  if(!transparency)return color;
+  const channels=color.slice(1).match(/.{2}/g).map(value=>parseInt(value,16));
+  return `rgba(${channels.join(', ')}, ${1-transparency/100})`;
+}
+function applyPaddingSide(input){
+  if(!input.checkValidity()){input.reportValidity();return;}
+  const property=input.dataset.paddingSide,value=(input.value||'0')+'px';
+  flushSource();
+  const node=resolvePath(parseHTML(),state.selectedPath);if(!node)return;
+  const name=activeClass(node),style=name?classStyle(name):computedBlockStyle(node);
+  const values=['top','right','bottom','left'].map(side=>'padding-'+side===property?value:style.getPropertyValue('padding-'+side)||'0px');
+  applyStyles({padding:values.join(' ')});
+}
 function selectControl(id,property,title,value,options){return `<label>${title}<select id="${id}" data-style="${property}">${options.map(([key,text])=>`<option value="${key}" ${key===value?'selected':''}>${text}</option>`).join('')}</select></label>`;}
 function renderProperties(doc=parseHTML()){
   const node=resolvePath(doc,state.selectedPath);
@@ -289,14 +314,17 @@ function renderProperties(doc=parseHTML()){
   const parents=[...doc.body.querySelectorAll('*')].filter(el=>CONTAINERS.has(el.tagName.toLowerCase())&&el!==node&&!node.contains(el));
   fields+=`<label>Родитель<select id="parent-container"><option value="" ${node.parentElement===doc.body?'selected':''}>body — корень страницы</option>${parents.map(el=>{const path=nodePath(el,doc.body);return `<option value="${path}" ${el===node.parentElement?'selected':''}>${'· '.repeat(path.split('.').length-1)}${el.tagName.toLowerCase()}${el.className?'.'+el.className.trim().split(/\s+/).join('.'):''}</option>`;}).join('')}</select></label>`;
   const theme=THEMES[state.theme],name=activeClass(node),names=validClasses(node),style=name?classStyle(name):computedBlockStyle(node);
-  const font=parseInt(style.fontSize)||({h1:46,h2:24,h3:20,span:12}[tag]||16),padding=parseInt(style.padding)||0,radius=parseInt(style.borderRadius)||0;
+  const font=parseInt(style.fontSize)||({h1:46,h2:24,h3:20,span:12}[tag]||16),radius=parseInt(style.borderRadius)||0;
   const color=hexColor(style.color,theme.ink),background=hexColor(style.backgroundColor,theme.card);
   const widthLimit=container?`<label>Макс. ширина блока, px<div class="width-limit-control"><input id="max-width-value" class="width-limit-value" type="number" min="1" step="1" value="${/^\d+(?:\.\d+)?px$/.test(style.maxWidth)?parseFloat(style.maxWidth):''}" placeholder="${escapeHTML(style.maxWidth&&style.maxWidth!=='none'?style.maxWidth:'Без ограничения')}" aria-label="Максимальная ширина блока"><button id="clear-max-width" type="button" ${style.maxWidth&&style.maxWidth!=='none'?'':'disabled'}>Сбросить</button></div><small>Блок может быть уже, но не шире этого значения.</small></label>`:'';
-  const styleFields=`<details class="inspector-section" ${container&&state.mission!==0?'':'open'}><summary>Оформление</summary><div class="style-fields"><details class="model-details"><summary>Блочная модель</summary><div class="box-model" aria-label="Блочная модель"><span>margin · снаружи</span><div><span>border · граница</span><div><span>padding · внутри</span><b>Содержимое &lt;${tag}&gt;</b></div></div></div></details><label>Стиль класса<select id="style-rule-target"><option value="">Отдельный стиль блока</option>${names.map(n=>`<option value="${n}" ${n===name?'selected':''}>.${n}</option>`).join('')}</select></label><div id="style-target-note" class="style-target-note">${name?'.'+escapeHTML(name):'Новый класс'}</div>${tag!=='img'?`<div class="field-pair"><label>Текст<div class="color-control"><input type="color" value="${color}" data-style="color" aria-label="Цвет текста"><span>${color}</span></div></label><label>Фон<div class="color-control"><input type="color" value="${background}" data-style="background" aria-label="Цвет фона"><span>${style.backgroundColor==='transparent'?'нет':background}</span></div></label></div>${slider('font-size','Размер текста',font,10,72)}`:''}${slider('padding','Внутренний отступ',padding,0,64)}${slider('border-radius','Скругление',radius,0,40)}${container?slider('width','Ширина блока',parseInt(style.width)||240,100,640):''}${widthLimit}${tag!=='img'?selectControl('text-align-control','text-align','Текст',style.textAlign||'left',[['left','Слева'],['center','По центру'],['right','Справа']]):''}${tag==='img'?selectControl('image-ratio-control','aspect-ratio','Пропорции',style.aspectRatio||'auto',[['auto','Исходные'],['16 / 9','16:9'],['1 / 1','1:1'],['3 / 4','3:4']])+selectControl('image-fit-control','object-fit','Вписать картинку',style.objectFit||'contain',[['contain','Целиком'],['cover','Заполнить рамку']]):''}</div></details>`;
+  const spacingFields=`<details class="inspector-section" open><summary>Отступы и углы</summary><div class="style-fields"><div class="style-target-note">${name?'.'+escapeHTML(name):'Стиль выбранного элемента'}</div>${paddingControls(style)}${slider('border-radius','Скругление углов',radius,0,Math.max(120,radius))}</div></details>`;
+  const transparency=backgroundTransparency(style);
+  const colorFields=`<div class="${tag!=='img'?'field-pair':''}">${tag!=='img'?`<label>Текст<div class="color-control"><input type="color" value="${color}" data-style="color" aria-label="Цвет текста"><span>${color}</span></div></label>`:''}<label>Фон<div class="color-control"><input type="color" value="${background}" data-style="background" aria-label="Цвет фона"><span>${style.backgroundColor==='transparent'?'нет':background}</span></div></label></div><label><span class="slider-label-row"><span>Прозрачность фона</span><output>${transparency}%</output></span><input type="range" min="0" max="100" value="${transparency}" data-background-transparency aria-label="Прозрачность фона"><small>0% — сплошной фон, 100% — прозрачный.</small></label>${tag!=='img'?slider('font-size','Размер текста',font,10,72):''}`;
+  const styleFields=`<details class="inspector-section" open><summary>Оформление</summary><div class="style-fields"><details class="model-details"><summary>Блочная модель</summary><div class="box-model" aria-label="Блочная модель"><span>margin · снаружи</span><div><span>border · граница</span><div><span>padding · внутри</span><b>Содержимое &lt;${tag}&gt;</b></div></div></div></details><label>Стиль класса<select id="style-rule-target"><option value="">Отдельный стиль блока</option>${names.map(n=>`<option value="${n}" ${n===name?'selected':''}>.${n}</option>`).join('')}</select></label><div id="style-target-note" class="style-target-note">${name?'.'+escapeHTML(name):'Новый класс'}</div>${colorFields}${container?slider('width','Ширина блока',parseInt(style.width)||240,100,640):''}${widthLimit}${tag!=='img'?selectControl('text-align-control','text-align','Текст',style.textAlign||'left',[['left','Слева'],['center','По центру'],['right','Справа']]):''}${tag==='img'?selectControl('image-ratio-control','aspect-ratio','Пропорции',style.aspectRatio||'auto',[['auto','Исходные'],['16 / 9','16:9'],['1 / 1','1:1'],['3 / 4','3:4']])+selectControl('image-fit-control','object-fit','Вписать картинку',style.objectFit||'contain',[['contain','Целиком'],['cover','Заполнить рамку']]):''}</div></details>`;
   const flexOn=style.display==='flex',direction=style.flexDirection||'row',gap=Number.parseInt(style.gap)||0,justify=style.justifyContent||'flex-start',align=style.alignItems||'stretch';
   const flexFields=container?`<details class="inspector-section" open><summary>Расположение · Flexbox</summary><div class="flex-fields"><label class="checkbox-field"><input id="property-flex-enabled" type="checkbox" ${flexOn?'checked':''}> Включить Flexbox</label><div class="direction-buttons"><button data-direction="row" class="${flexOn&&direction==='row'?'active':''}">↔ В ряд</button><button data-direction="column" class="${flexOn&&direction==='column'?'active':''}">↕ Колонка</button></div>${slider('gap','Расстояние',gap,0,48)}${selectControl('justify-control','justify-content','justify-content · '+(direction==='row'?'↔ горизонталь':'↕ вертикаль'),justify,[['flex-start','В начале'],['center','По центру'],['space-between','Между краями'],['space-evenly','Равномерно'],['flex-end','В конце']])}${selectControl('align-control','align-items','align-items · '+(direction==='row'?'↕ вертикаль':'↔ горизонталь'),align,[['stretch','Растянуть'],['flex-start','В начале'],['center','По центру'],['flex-end','В конце']])}<div class="position-presets"><span>Положение</span><button data-position="center">Центр</button><button data-position="left">Слева</button><button data-position="bottom">Снизу</button></div><label class="checkbox-field"><input id="property-flex-wrap" type="checkbox" ${style.flexWrap==='wrap'?'checked':''}> Перенос · wrap</label></div></details>`:`<div class="flex-parent-link"><button id="jump-to-flex">Расположение у родителя →</button></div>`;
   const trail=[];let ancestor=node;while(ancestor&&ancestor!==doc.body){trail.unshift(`<button data-select-path="${nodePath(ancestor,doc.body)}">${ancestor.tagName.toLowerCase()}</button>`);ancestor=ancestor.parentElement;}
-  $('#element-properties').innerHTML=`<nav class="nesting-trail" aria-label="Вложенность выбранного блока">${trail.join('<span>›</span>')}</nav><div class="property-heading"><b>&lt;${tag}&gt;</b><div class="node-actions"><button data-node-action="up" aria-label="Переместить элемент выше">↑</button><button data-node-action="down" aria-label="Переместить элемент ниже">↓</button><button data-node-action="duplicate" aria-label="Дублировать элемент">⧉</button><button data-node-action="delete" class="delete-block-button" aria-label="Удалить блок">Удалить блок</button></div></div>${container&&state.mission===2?flexFields:''}<div class="property-fields">${fields}</div>${styleFields}${container&&state.mission===2?'':flexFields}`;
+  $('#element-properties').innerHTML=`<nav class="nesting-trail" aria-label="Вложенность выбранного блока">${trail.join('<span>›</span>')}</nav><div class="property-heading"><b>&lt;${tag}&gt;</b><div class="node-actions"><button data-node-action="up" aria-label="Переместить элемент выше">↑</button><button data-node-action="down" aria-label="Переместить элемент ниже">↓</button><button data-node-action="duplicate" aria-label="Дублировать элемент">⧉</button><button data-node-action="delete" class="delete-block-button" aria-label="Удалить блок">Удалить блок</button></div></div>${container&&state.mission===2?flexFields:''}<div class="property-fields">${fields}</div>${spacingFields}${styleFields}${container&&state.mission===2?'':flexFields}`;
 }
 function putClassStyle(name,style){
   const rule='.'+name+' {\n'+[...style].map(property=>'  '+property+': '+style.getPropertyValue(property)+';').join('\n')+'\n}';
@@ -770,10 +798,22 @@ document.addEventListener('click', (event) => { if (Date.now() < suppressClickUn
 $('#element-properties').addEventListener('input',event=>{
   const target=event.target;
   if(target.id.startsWith('property-')&&!['property-class','property-flex-enabled','property-flex-wrap'].includes(target.id))applyProperty(target.id,target.value);
+  if(target.hasAttribute('data-background-transparency')){
+    target.closest('label').querySelector('output').textContent=target.value+'%';
+    const color=$('[data-style="background"]').value;
+    applyStyles({background:backgroundWithTransparency(color,Number(target.value))},true);return;
+  }
+  if(target.dataset.style==='background'){
+    const transparency=Number($('[data-background-transparency]').value);
+    target.parentElement.querySelector('span').textContent=target.value;
+    applyStyles({background:backgroundWithTransparency(target.value,transparency)},true);return;
+  }
+  if(target.dataset.style==='padding')document.querySelectorAll('[data-padding-side]').forEach(input=>input.value=target.value);
   if(target.dataset.style&&target.tagName!=='SELECT'){const value=target.value+(target.dataset.unit||'');if(target.type==='range'){const output=target.closest('label').querySelector('output');if(output)output.textContent=value.replace('px',' px');applyStyles({[target.dataset.style]:value},true);}else{const text=target.parentElement.querySelector('span');if(text)text.textContent=target.value;applyStyles({[target.dataset.style]:value},true);}}
 });
 $('#element-properties').addEventListener('change',event=>{
   const target=event.target;
+  if(target.dataset.paddingSide)applyPaddingSide(target);
   if(target.id==='max-width-value'){
     if(!target.value)applyStyles({'max-width':''});
     else if(target.checkValidity())applyStyles({'max-width':target.value+'px'});
@@ -783,10 +823,11 @@ $('#element-properties').addEventListener('change',event=>{
   if(target.id==='semantic-tag')applyProperty(target.id,target.value);
   if(target.id==='parent-container'){const path=target.value;mutateHTML(doc=>{const node=resolvePath(doc,state.selectedPath),parent=path?resolvePath(doc,path):doc.body;if(!node||!parent||node===parent||node.contains(parent))return;parent.append(node);return node;},{announce:'Вложенность изменена. Посмотри на скобки в структуре.'});}
   if(target.id==='style-rule-target'){state.selectedClass=target.value||'__own__';if(target.value==='page'&&resolvePath(parseHTML(),state.selectedPath)?.matches('main.page')&&!state.lessonActions.includes('page-selected'))state.lessonActions.push('page-selected');renderProperties();$('#style-rule-target')?.closest('details')?.setAttribute('open','');updateMissions();saveDraft();}
-  if(target.dataset.style){applyStyles({[target.dataset.style]:target.value+(target.dataset.unit||'')});}
+  if(target.dataset.style&&target.tagName==='SELECT'){applyStyles({[target.dataset.style]:target.value+(target.dataset.unit||'')});}
   if(target.id==='property-flex-enabled')applyStyles(target.checked?{display:'flex','flex-direction':'row',gap:'16px','flex-wrap':'wrap'}:{display:'block'});
   if(target.id==='property-flex-wrap')applyStyles({'flex-wrap':target.checked?'wrap':'nowrap'});
 });
+$('#element-properties').addEventListener('keydown',event=>{if(event.target.dataset.paddingSide&&event.key==='Enter'&&!event.isComposing){event.preventDefault();applyPaddingSide(event.target);}});
 $('#code-editor').addEventListener('input',()=>{updateLineNumbers();clearTimeout(sourceTimer);sourceTimer=setTimeout(commitSource,350);});
 $('#code-editor').addEventListener('scroll',()=>$('#line-numbers').scrollTop=$('#code-editor').scrollTop);
 $('#code-editor').addEventListener('keydown',event=>{if(event.key==='Tab'){event.preventDefault();const el=event.target;el.setRangeText('  ',el.selectionStart,el.selectionEnd,'end');el.dispatchEvent(new Event('input'));}});
