@@ -69,6 +69,8 @@ test('classes can be edited inside a block without losing focus, dragging or sav
   assert.equal(ui.doc.activeElement,input);
   assert.equal(ui.doc.querySelector('#property-class').value,'hero__intro');
   assert.equal(input.closest('.block-row').draggable,false);
+  input.closest('.block-row').click();
+  assert.equal(ui.doc.activeElement,input,'selection click after layout changes must preserve the textarea');
   input.dispatchEvent(new ui.win.MouseEvent('pointerdown',{bubbles:true,button:0}));
   assert.equal(ui.run('pointerDrag'),null,'editing must not start a block drag');
   input.value='hero__intro interesting__description';
@@ -129,7 +131,7 @@ test('explicit delete block buttons remove the chosen subtree and undo restores 
   const ui=editor(t);ui.click('#theory-start');
   const before=ui.run(`state.files['index.html']`);
   ui.click('.block-row[data-path="0.0"] .block-select');
-  assert.match(ui.doc.querySelector('[data-node-action="delete"]').textContent,/Удалить блок/);
+  assert.match(ui.doc.querySelector('[data-delete-block="0.0"]').textContent,/Удалить блок/);
   ui.click('[data-delete-block="0.0"]');
   assert.equal(ui.run(`parseHTML().querySelector('header')`),null);
   assert.ok(ui.run(`parseHTML().querySelector('#interests')`));
@@ -137,8 +139,8 @@ test('explicit delete block buttons remove the chosen subtree and undo restores 
   assert.match(ui.doc.querySelector('#toast').textContent,/Блок удалён/);
   ui.click('#undo-button');
   assert.equal(ui.run(`state.files['index.html']`),before);
-  ui.click('[data-node-action="delete"]');
-  assert.equal(ui.run(`parseHTML().querySelector('header')`),null,'inspector delete uses the same operation');
+  ui.click('[data-delete-block="0.0"]');
+  assert.equal(ui.run(`parseHTML().querySelector('header')`),null,'inline delete remains available after undo');
 });
 
 test('padding, rounded corners and background controls are available for every lesson element',t=>{
@@ -636,7 +638,7 @@ test('redesign keeps content on the left, styles on the right and step navigatio
   const ui=editor(t);ui.click('#theory-start');
   ui.click('.task-details summary');ui.click('[data-task-step="name"]');
   assert.equal(ui.doc.querySelector('.task-details').open,false);
-  assert.ok(ui.doc.querySelector('#content-properties #property-text'));
+  assert.ok(ui.doc.querySelector('.block-row.selected > #property-text'));
   assert.equal(ui.doc.activeElement.id,'property-text');
   assert.ok(ui.doc.querySelector('#element-properties [data-style="color"]'));
   const field=ui.doc.querySelector('#property-text');field.value='Привет, я Даша';field.dispatchEvent(new ui.win.Event('input',{bubbles:true}));
@@ -660,4 +662,52 @@ test('progress uses CSS rule order, repeated rules and important declarations in
   ui.run(`selectPath('0.0.1.0');state.selectedClass='wide';renderProperties();applyStyles({width:'230px'});`);
   assert.equal(ui.run(`classStyle('wide').width`),'230px','editor updates repeated rules consistently');
   assert.equal(ui.percent(),'100%');
+});
+
+test('inline text stays focused, updates preview, preserves plain text and supports undo',t=>{
+  const ui=editor(t);ui.click('#theory-start');
+  const input=ui.doc.querySelector('[data-text-path="0.0.0"]');input.focus();
+  assert.equal(input.id,'property-text');
+  assert.equal(input.closest('.block-row').draggable,false);
+  const original=ui.run(`parseHTML().querySelector('h1').textContent`);
+  input.value='Даша <script>alert(1)</script>\nМой сайт';input.dispatchEvent(new ui.win.Event('input',{bubbles:true}));
+  assert.equal(ui.doc.activeElement,input,'typing must not replace the active textarea');
+  assert.equal(ui.doc.querySelector('[data-text-path="0.0.0"]'),input);
+  assert.equal(ui.run(`parseHTML().querySelector('h1').textContent`),input.value);
+  assert.equal(ui.run(`parseHTML().querySelector('h1 script')`),null);
+  assert.match(ui.doc.querySelector('#preview-frame').srcdoc,/Даша &lt;script&gt;/);
+  ui.click('#undo-button');assert.equal(ui.run(`parseHTML().querySelector('h1').textContent`),original);
+  ui.run(`selectPath('0');applyStyles({background:'#abcabc'},true);`);
+  assert.ok(ui.doc.querySelector('.block-row.selected > #content-properties'),'live styles keep metadata in the selected block');
+});
+
+test('check opens actionable microsteps without completing a missing selection',t=>{
+  const ui=editor(t);ui.click('#theory-start');ui.click('#check-button');
+  assert.equal(ui.percent(),'0%','checking cannot award the selection step');
+  assert.equal(ui.doc.querySelector('.task-details').open,true);
+  assert.equal(ui.doc.activeElement.dataset.taskStep,'page-select');
+  assert.ok(ui.doc.querySelector('.step-target'));
+  ui.click('[data-task-step="page-select"]');
+  assert.equal(ui.doc.querySelector('.task-details').open,false);
+  assert.equal(ui.percent(),'25%');
+  ui.click('#mission-action-button');
+  assert.equal(ui.doc.activeElement.dataset.style,'background');
+  assert.ok(ui.doc.activeElement.closest('.step-target'));
+});
+
+test('block drawer inserts inside the selected parent and new project preserves previous work',t=>{
+  const ui=editor(t);ui.click('#theory-start');
+  ui.run(`selectPath('0.0');`);
+  ui.click('#block-library > summary');
+  assert.equal(ui.doc.querySelector('#block-library').open,true);
+  assert.match(ui.doc.querySelector('#insert-destination').textContent,/header.*hero/);
+  ui.click('#library-items [data-block="div"]');
+  assert.equal(ui.doc.querySelector('#block-library').open,false);
+  assert.ok(ui.run(`parseHTML().querySelector('header.hero > div')`));
+  const previous=ui.run('library.activeId');
+  ui.click('#new-project-button');
+  assert.notEqual(ui.run('library.activeId'),previous);
+  assert.ok(ui.run(`library.projects[${JSON.stringify(previous)}].state.files['index.html'].includes('<div')`));
+  assert.equal(ui.doc.querySelector('#theory-dialog').open,true);
+  assert.equal(ui.percent(),'0%');
 });

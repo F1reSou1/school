@@ -12,37 +12,32 @@
 </head>
 <body>
   <header class="topbar">
-    <h1>Страница «О себе»</h1>
-    <input id="project-title" class="project-title" aria-label="Название проекта" title="Название проекта" maxlength="60" value="Моя страница">
-    <span id="global-save" class="global-save" aria-live="polite">Сохранено</span>
-    <div class="header-actions"><button id="help-button" class="button quiet" aria-label="Справка">Справка</button><button id="projects-button" class="button secondary">Проекты</button><button id="save-button" class="button primary">Сохранить</button><button id="result-button" class="button secondary">Результат ↗</button></div>
+    <div class="project-controls"><button id="new-project-button" class="button secondary">＋ Новый проект</button><details class="project-menu"><summary aria-label="Меню проекта">•••</summary><div class="project-menu-content"><label>Название проекта<input id="project-title" class="project-title" maxlength="60" value="Моя страница"></label><span id="global-save" class="global-save" aria-live="polite">Сохранено</span><button id="projects-button" class="button quiet">Мои проекты</button><button id="save-button" class="button quiet">Сохранить версию</button><button id="result-button" class="button quiet">Скачать / перенести</button><button id="help-button" class="button quiet">Справка</button></div></details></div>
+    <details class="task-details">
+      <summary class="task-heading" title="Открыть шаги текущей задачи"><span id="mission-number" class="mission-number">1</span><div class="mission-text"><h2 id="mission-title"></h2><p id="mission-description"></p><small>Микрозадачи <span aria-hidden="true">⌄</span></small></div><div class="task-meter"><span id="task-percent">0%</span><progress id="task-progress" max="100" value="0"></progress><small id="task-count"></small></div></summary>
+      <div class="task-popover"><div class="task-popover-heading"><b>Задания урока <span id="progress-count">0 / 3</span></b><button id="close-task-list" class="toolbar-button" aria-label="Закрыть микрозадачи">×</button></div><nav id="mission-nav" class="mission-nav" aria-label="Задания урока"></nav><p class="task-list-help">Нажми на шаг — покажем, где его выполнить.</p><div id="task-checklist"></div><p id="task-success" class="task-success" hidden></p></div>
+    </details>
+    <div class="mission-actions"><button id="theory-button" class="button quiet">Теория</button><button id="check-button" class="button primary">Проверить</button></div>
   </header>
-  <section class="lesson-bar" aria-label="Задания урока"><span class="lesson-label">Задания <span id="progress-count">0 / 3</span></span><nav id="mission-nav" class="mission-nav" aria-label="Шаги урока"></nav></section>
-  <aside class="mission-card" aria-label="Текущее задание">
-    <div class="task-heading"><span id="mission-number" class="mission-number">1</span><div class="mission-text"><h2 id="mission-title"></h2><p id="mission-description"></p></div><div class="task-meter"><span id="task-percent">0%</span><progress id="task-progress" max="100" value="0"></progress><small id="task-count"></small></div></div>
-    <div class="task-footer"><div class="next-step" aria-live="polite"><b id="next-step-label">Сейчас сделай</b><span id="next-step"></span></div><div class="mission-actions"><button id="theory-button" class="button quiet">Теория</button><button id="mission-action-button" class="button secondary">К шагу</button><button id="hint-button" class="button quiet" aria-expanded="false">Подсказка</button><button id="check-button" class="button primary">Проверить</button></div></div>
-    <p id="task-success" class="task-success" hidden>Поздравляем, 100%! Всё готово для следующей задачи.</p>
-    <details class="task-details"><summary>Карта задания <span>Все шаги ↗</span></summary><div id="task-checklist"></div></details>
-  </aside>
+  <aside class="next-action" aria-label="Текущий шаг"><div class="next-step" aria-live="polite"><b id="next-step-label">Сейчас сделай</b><span id="next-step"></span></div><button id="hint-button" class="button quiet" aria-expanded="false">Подсказка</button><button id="mission-action-button" class="button quiet">Показать где →</button></aside>
   <main class="workspace">
     <section class="studio" aria-label="Редактор проекта">
       <div class="editor-shell">
-        <div class="panel-label"><span>01 / СОДЕРЖИМОЕ</span><b>Собери страницу</b></div><div class="editor-toolbar"><div id="editor-mode" class="segmented" aria-label="Режим редактора"><button data-mode="blocks" class="active">Блоки</button><button data-mode="html">HTML</button><button data-mode="css">CSS</button></div><button id="undo-button" class="toolbar-button" title="Отменить изменение" aria-label="Отменить изменение">↶</button></div>
+        <div class="editor-toolbar"><div id="editor-mode" class="segmented" aria-label="Режим редактора"><button data-mode="blocks" class="active">Блоки</button><button data-mode="html">HTML</button><button data-mode="css">CSS</button></div><button id="undo-button" class="toolbar-button" title="Отменить изменение" aria-label="Отменить изменение">↶</button></div>
         <div class="editor-body">
           <section id="builder-panel" class="builder-panel" aria-label="Структура страницы"><div id="block-tree" class="block-tree"></div><div id="append-zone" class="append-zone" data-drop="append">Перетащи блок сюда</div></section>
           <section id="code-panel" class="code-panel" hidden><div class="code-file-header"><span id="code-caption">HTML</span><button id="class-button" class="small-button" hidden>+ Класс</button></div><div class="code-content"><div id="line-numbers" class="line-numbers" aria-hidden="true"></div><textarea id="code-editor" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Редактор кода"></textarea></div><div id="code-hint" class="code-hint"></div></section>
         </div>
         <section id="content-properties" class="content-properties" aria-label="Содержимое выбранного блока"></section>
-        <details id="block-library" class="block-library"><summary class="library-heading"><span>＋ Добавить блок</span><button id="gallery-button">Картинки ↗</button></summary><div id="library-items" class="library-items"></div></details>
+        <details id="block-library" class="block-library"><summary class="library-heading"><span>＋ Добавить блок</span><span class="drawer-chevron" aria-hidden="true">⌃</span></summary><div class="library-drawer"><div class="drawer-heading"><b>Добавить блок</b><button id="close-block-library" class="toolbar-button" aria-label="Закрыть добавление блоков">×</button></div><p id="insert-destination"></p><div id="library-items" class="library-items"></div><button id="gallery-button" class="button quiet">Выбрать картинку →</button></div></details>
         <footer class="editor-status"><span id="save-status">Сохранено</span><span id="element-count"></span></footer>
       </div>
     </section>
     <section class="preview-shell" aria-label="Просмотр сайта">
-      <div class="preview-heading"><h2><small>02 / РЕЗУЛЬТАТ</small>Твоя страница</h2><div class="preview-tools"><button id="refresh-button" class="toolbar-button" aria-label="Обновить предпросмотр" title="Обновить">↻</button><button id="fullscreen-button" class="toolbar-button" aria-label="Открыть большой предпросмотр" title="Открыть целиком">↗</button></div></div>
-      <div class="preview-options"><label class="toggle-label"><input id="inspect-toggle" type="checkbox"><span>Выбрать блок</span></label><label class="toggle-label"><input id="css-toggle" type="checkbox" checked><span>CSS</span></label></div>
+      <div class="preview-options"><label class="toggle-label"><input id="inspect-toggle" type="checkbox"><span>Выбрать блок</span></label><label class="toggle-label"><input id="css-toggle" type="checkbox" checked><span>CSS</span></label><div class="preview-tools"><button id="refresh-button" class="toolbar-button" aria-label="Обновить предпросмотр" title="Обновить">↻</button><button id="fullscreen-button" class="toolbar-button" aria-label="Открыть большой предпросмотр" title="Открыть целиком">↗</button></div></div>
       <div id="site-panel" class="site-panel"><div id="preview-stage" class="preview-stage"><iframe id="preview-frame" title="Предпросмотр страницы" sandbox="allow-scripts"></iframe></div><div id="script-error" class="script-error" hidden></div></div>
     </section>
-    <aside class="inspector-shell" aria-label="Настройки выбранного блока"><div class="inspector-heading"><h2><small>03 / ОФОРМЛЕНИЕ</small>Стиль блока</h2></div><section id="element-properties" class="element-properties"></section></aside>
+    <aside class="inspector-shell" aria-label="Настройки выбранного блока"><div class="inspector-heading"><h2>Стиль блока</h2></div><section id="element-properties" class="element-properties"></section></aside>
   </main>
   <div id="hint-box" class="hint-box" role="status" hidden></div><div id="toast" class="toast" role="status" hidden></div>
   <dialog id="theory-dialog" class="modal theory-modal" aria-labelledby="theory-title" aria-describedby="theory-step">

@@ -244,18 +244,23 @@ function renderEditor() {
 }
 function renderTree(properties = true) {
   const doc = parseHTML();
+  const contentPanel=$('#content-properties');$('.editor-shell').append(contentPanel);
   function row(node, path, depth) {
     const tag=node.tagName.toLowerCase(),container=CONTAINERS.has(tag),selected=path===state.selectedPath;
     const summary=container?({main:'Страница',header:'Знакомство',section:'Раздел',div:'Блок',figure:'Картинка',footer:'Подпись',article:'Карточка'}[tag]||'Контейнер'):node.textContent.trim()||node.getAttribute('alt')||'Пустой элемент';
+    const editable=(!container||(!node.children.length&&Boolean(node.textContent.trim())))&&!VOID_TAGS.has(tag);
+    const textValue=['ul','ol'].includes(tag)?[...node.children].map(li=>li.textContent).join('\n'):node.textContent;
     const className=node.getAttribute('class')||'';
     const textNodes=[...node.childNodes].filter(child=>child.nodeType===3&&child.textContent.trim());
     const itemCount=node.children.length+textNodes.length;
     const children=container?[...node.childNodes].map(child=>child.nodeType===1?row(child,nodePath(child,doc.body),depth+1):child.nodeType===3&&child.textContent.trim()?`<div class="direct-text">${escapeHTML(child.textContent.trim())}</div>`:'').join(''):'';
     const collapsed=container&&(collapsedNodes.has(path)||(!node.children.length&&!expandedEmptyNodes.has(path)));
-    return `<div class="tree-node ${container?'container-node':''} ${itemCount===0?'empty-node':''} ${collapsed?'scope-collapsed':''}" data-node-path="${path}" data-tag="${tag}" style="--level:${depth%4}"><div class="drop-line" data-drop="before" data-path="${path}"></div><div class="block-heading">${container?`<button class="fold-button" data-fold="${path}" aria-expanded="${!collapsed}" aria-label="${collapsed?'Раскрыть':'Свернуть'} ${tag}">${collapsed?'›':'⌄'}</button>`:'<span class="leaf-mark">·</span>'}<div class="block-row ${selected?'selected':''}" draggable="true" data-path="${path}" data-container="${container}" role="group" aria-label="${escapeHTML(tag)}"><button type="button" class="block-select" aria-label="${escapeHTML(tag+': '+summary.slice(0,70))}" aria-pressed="${selected}"><span class="tag-name ${container?'container':''}">&lt;${tag}&gt;</span><span class="node-summary">${escapeHTML(summary)}</span></button><input class="node-class-input" data-class-path="${path}" value="${escapeHTML(className)}" placeholder="класс" aria-label="CSS-классы элемента ${tag}" title="Например hero__item. CSS-классы без точки, через пробел. Enter — сохранить, Esc — отменить." autocomplete="off" autocapitalize="off" spellcheck="false">${container?'<span class="scope-inline" aria-hidden="true">{ }</span>':''}<div class="block-row-actions"><button type="button" data-clear-block-classes="${path}" ${className?'':'disabled'}>Снять классы</button><button type="button" data-delete-block="${path}" class="delete-block-button">Удалить блок</button></div></div></div>${container?`<div class="scope-content"><div class="scope-open" data-drop="inside" data-path="${path}" aria-hidden="true">{ </div><div class="scope-body" data-drop="inside" data-path="${path}">${children}<div class="nesting-drop" data-drop="inside" data-path="${path}">+ Вложить в &lt;${tag}&gt;</div></div><div class="scope-close" data-drop="inside" data-path="${path}"><b>}</b><span>&lt;/${tag}&gt;</span></div></div>`:''}<div class="drop-line" data-drop="after" data-path="${path}"></div></div>`;
+    return `<div class="tree-node ${container?'container-node':''} ${itemCount===0?'empty-node':''} ${collapsed?'scope-collapsed':''}" data-node-path="${path}" data-tag="${tag}" style="--level:${depth%4}"><div class="drop-line" data-drop="before" data-path="${path}"></div><div class="block-heading">${container?`<button class="fold-button" data-fold="${path}" aria-expanded="${!collapsed}" aria-label="${collapsed?'Раскрыть':'Свернуть'} ${tag}">${collapsed?'›':'⌄'}</button>`:'<span class="leaf-mark">·</span>'}<div class="block-row ${selected?'selected':''}" draggable="true" data-path="${path}" data-container="${container}" role="group" aria-label="${escapeHTML(tag)}"><button type="button" class="block-select" aria-label="${escapeHTML(tag+': '+summary.slice(0,70))}" aria-pressed="${selected}"><span class="tag-name ${container?'container':''}">&lt;${tag}&gt;</span>${editable?'':`<span class="node-summary">${escapeHTML(summary)}</span>`}</button>${editable?`<textarea class="node-text-input" data-text-path="${path}" ${selected?'id="property-text"':''} rows="1" aria-label="Текст ${tag}" placeholder="Напиши текст">${escapeHTML(textValue)}</textarea>`:''}<input class="node-class-input" data-class-path="${path}" value="${escapeHTML(className)}" placeholder="класс" aria-label="CSS-классы элемента ${tag}" title="Например hero__item. CSS-классы без точки, через пробел. Enter — сохранить, Esc — отменить." autocomplete="off" autocapitalize="off" spellcheck="false">${container?'<span class="scope-inline" aria-hidden="true">{ }</span>':''}<div class="block-row-actions"><button type="button" data-clear-block-classes="${path}" ${className?'':'disabled'}>Снять классы</button><button type="button" data-delete-block="${path}" class="delete-block-button">Удалить блок</button></div></div></div>${container?`<div class="scope-content"><div class="scope-open" data-drop="inside" data-path="${path}" aria-hidden="true">{ </div><div class="scope-body" data-drop="inside" data-path="${path}">${children}<div class="nesting-drop" data-drop="inside" data-path="${path}">+ Вложить в &lt;${tag}&gt;</div></div><div class="scope-close" data-drop="inside" data-path="${path}"><b>}</b><span>&lt;/${tag}&gt;</span></div></div>`:''}<div class="drop-line" data-drop="after" data-path="${path}"></div></div>`;
   }
   $('#block-tree').innerHTML=[...doc.body.children].filter(node=>node.tagName!=='SCRIPT').map(node=>row(node,nodePath(node,doc.body),0)).join('');
   if(properties)renderProperties(doc);
+  else {const selectedRow=$('.block-row.selected');if(selectedRow)selectedRow.append(contentPanel);}
+  sizeInlineText();
 }
 function revealPath(path){
   const parts=path.split('.');
@@ -308,10 +313,9 @@ function applyPaddingSide(input){
 function selectControl(id,property,title,value,options){return `<label>${title}<select id="${id}" data-style="${property}">${options.map(([key,text])=>`<option value="${key}" ${key===value?'selected':''}>${text}</option>`).join('')}</select></label>`;}
 function renderProperties(doc=parseHTML()){
   const node=resolvePath(doc,state.selectedPath);
-  if(!node){$('#content-properties').innerHTML='';$('#element-properties').innerHTML='<p class="property-help">Выбери блок в структуре или прямо в предпросмотре.</p>';return;}
-  const tag=node.tagName.toLowerCase(),container=CONTAINERS.has(tag),isList=['ul','ol'].includes(tag),editable=(!container||(!node.children.length&&Boolean(node.textContent.trim())))&&!VOID_TAGS.has(tag);
-  const value=isList?[...node.children].map(li=>li.textContent).join('\n'):node.textContent;
-  let fields=editable?`<label>${isList?'Пункты · один на строку':'Содержимое'}${isList||tag==='p'||value.length>80?`<textarea id="property-text" rows="3">${escapeHTML(value)}</textarea>`:`<input id="property-text" value="${escapeHTML(value)}">`}</label>`:'';
+  if(!node){$('#insert-destination').textContent='В конец страницы';$('#content-properties').innerHTML='';$('#element-properties').innerHTML='<p class="property-help">Выбери блок в структуре или прямо в предпросмотре.</p>';return;}
+  const tag=node.tagName.toLowerCase(),container=CONTAINERS.has(tag);
+  let fields='';
   if(container)fields+=`<label>Тег<select id="semantic-tag">${Object.keys(SEMANTICS).map(t=>`<option value="${t}" ${t===tag?'selected':''}>${t} — ${({main:'главное',header:'вступление',section:'раздел',footer:'завершение',figure:'картинка',div:'нейтральный блок',article:'история',nav:'навигация',aside:'дополнение'})[t]}</option>`).join('')}</select></label>`;
   if(tag==='a')fields+=`<label>Адрес ссылки · href<input id="property-href" value="${escapeHTML(node.getAttribute('href')||'')}"></label>`;
   if(tag==='img')fields+=`<img class="image-property-thumb" src="${escapeHTML(node.getAttribute('src')||'')}" alt="Текущая картинка"><button id="property-image" class="image-choose-button">Заменить картинку</button><label>Описание · alt (необязательно)<input id="property-alt" value="${escapeHTML(node.getAttribute('alt')||'')}" placeholder="Можно оставить пустым"></label>`;
@@ -330,8 +334,16 @@ function renderProperties(doc=parseHTML()){
   const styleFields=`<details class="inspector-section" open><summary>Оформление</summary><div class="style-fields"><details class="model-details"><summary>Блочная модель</summary><div class="box-model" aria-label="Блочная модель"><span>margin · снаружи</span><div><span>border · граница</span><div><span>padding · внутри</span><b>Содержимое &lt;${tag}&gt;</b></div></div></div></details><label>Стиль класса<select id="style-rule-target"><option value="">Отдельный стиль блока</option>${names.map(n=>`<option value="${n}" ${n===name?'selected':''}>.${n}</option>`).join('')}</select></label><div id="style-target-note" class="style-target-note">${name?'.'+escapeHTML(name):'Новый класс'}</div>${imageWidth}${colorFields}${container?slider('width','Ширина блока',parseInt(style.width)||240,100,640):''}${widthLimit}${tag!=='img'?selectControl('text-align-control','text-align','Текст',style.textAlign||'left',[['left','Слева'],['center','По центру'],['right','Справа']]):''}${tag==='img'?selectControl('image-ratio-control','aspect-ratio','Пропорции',style.aspectRatio||'auto',[['auto','Исходные'],['16 / 9','16:9'],['1 / 1','1:1'],['3 / 4','3:4']])+selectControl('image-fit-control','object-fit','Вписать картинку',style.objectFit||'contain',[['contain','Целиком'],['cover','Заполнить рамку']]):''}</div></details>`;
   const flexOn=style.display==='flex',direction=style.flexDirection||'row',gap=Number.parseInt(style.gap)||0,justify=style.justifyContent||'flex-start',align=style.alignItems||'stretch';
   const flexFields=container?`<details class="inspector-section" open><summary>Расположение · Flexbox</summary><div class="flex-fields"><label class="checkbox-field"><input id="property-flex-enabled" type="checkbox" ${flexOn?'checked':''}> Включить Flexbox</label><div class="direction-buttons"><button data-direction="row" class="${flexOn&&direction==='row'?'active':''}">↔ В ряд</button><button data-direction="column" class="${flexOn&&direction==='column'?'active':''}">↕ Колонка</button></div>${slider('gap','Расстояние',gap,0,48)}${selectControl('justify-control','justify-content','justify-content · '+(direction==='row'?'↔ горизонталь':'↕ вертикаль'),justify,[['flex-start','В начале'],['center','По центру'],['space-between','Между краями'],['space-evenly','Равномерно'],['flex-end','В конце']])}${selectControl('align-control','align-items','align-items · '+(direction==='row'?'↕ вертикаль':'↔ горизонталь'),align,[['stretch','Растянуть'],['flex-start','В начале'],['center','По центру'],['flex-end','В конце']])}<div class="position-presets"><span>Положение</span><button data-position="center">Центр</button><button data-position="left">Слева</button><button data-position="bottom">Снизу</button></div><label class="checkbox-field"><input id="property-flex-wrap" type="checkbox" ${style.flexWrap==='wrap'?'checked':''}> Разрешить перенос · wrap</label><small class="flex-wrap-help">${direction==='row'?'Если места по ширине не хватит, дети перейдут на следующую строку.':'Для переноса в соседнюю колонку нужна ограниченная высота контейнера.'}</small></div></details>`:`<div class="flex-parent-link"><button id="jump-to-flex">Расположение у родителя →</button></div>`;
-  const trail=[];let ancestor=node;while(ancestor&&ancestor!==doc.body){trail.unshift(`<button data-select-path="${nodePath(ancestor,doc.body)}">${ancestor.tagName.toLowerCase()}</button>`);ancestor=ancestor.parentElement;}
-  $('#content-properties').innerHTML=`<nav class="nesting-trail" aria-label="Вложенность выбранного блока">${trail.join('<span>›</span>')}</nav><div class="property-heading"><b>&lt;${tag}&gt;</b><div class="node-actions"><button data-node-action="up" aria-label="Переместить элемент выше">↑</button><button data-node-action="down" aria-label="Переместить элемент ниже">↓</button><button data-node-action="duplicate" aria-label="Дублировать элемент">⧉</button><button data-node-action="delete" class="delete-block-button" aria-label="Удалить блок">Удалить блок</button></div></div><div class="property-fields">${primaryFields}<details class="content-meta"><summary>Классы и вложенность</summary><div class="property-fields">${fields}</div></details></div>`;
+  const selectedRow=$('.block-row[data-path="'+state.selectedPath+'"]');
+  document.querySelectorAll('[data-text-path]').forEach(input=>{input.id=input.dataset.textPath===state.selectedPath?'property-text':'';});
+  const panel=$('#content-properties');
+  const wasOpen=panel.dataset.path===state.selectedPath&&Boolean(panel.querySelector('details')?.open);
+  panel.dataset.path=state.selectedPath;
+  panel.innerHTML=`<details class="content-meta" ${wasOpen?'open':''}><summary>Ещё настройки &lt;${tag}&gt;</summary><div class="node-actions"><button data-node-action="up" aria-label="Переместить элемент выше">↑ Выше</button><button data-node-action="down" aria-label="Переместить элемент ниже">↓ Ниже</button><button data-node-action="duplicate" aria-label="Дублировать элемент">⧉ Копия</button></div><div class="property-fields">${primaryFields}${fields}</div></details>`;
+  if(selectedRow)selectedRow.append(panel);
+  panel.hidden=!selectedRow;
+  const destination=defaultContainer(doc);
+  $('#insert-destination').textContent=destination&&destination!==doc.body?'Внутрь <'+destination.tagName.toLowerCase()+'>'+ (destination.className?' .'+destination.className.trim().split(/\s+/).join('.'):''):'В конец страницы';
   $('#element-properties').innerHTML=`<div class="selected-style"><span>Выбран элемент</span><b>&lt;${tag}&gt;${name?' .'+escapeHTML(name):''}</b></div>${styleFields}${container&&state.mission===2?flexFields:''}${spacingFields}${container&&state.mission===2?'':flexFields}`;
 }
 function putClassStyle(name,style){
@@ -374,7 +386,7 @@ function jumpToFlex(){
   const node=parent&&CONTAINERS.has(parent.tagName.toLowerCase())?parent:doc.querySelector('.hero__img')||doc.querySelector('img')?.parentElement;
   if(node)selectPath(nodePath(node,doc.body));
 }
-function missionAction(stepId){
+function missionAction(stepId,options={}){
   flushSource();
   const doc=parseHTML(),checks=lessonChecks(doc)[state.mission];
   const next=checks.find(item=>item.id===stepId)||WorkshopLesson.progress(checks).next;
@@ -382,7 +394,7 @@ function missionAction(stepId){
   $('.task-details').open=false;
   let node=next.node||doc.querySelector(next.selector||'');
   if(!node)node=doc.querySelector(state.mission===0?'main.page':state.mission===1?'header.hero':'section#interests,section.interests');
-  if(node)selectPath(nodePath(node,doc.body),typeof stepId==='string'||stepId?.type==='click');
+  if(node)selectPath(nodePath(node,doc.body),options.userAction!==false&&(typeof stepId==='string'||stepId?.type==='click'));
   if(next.styleClass&&node?.classList.contains(next.styleClass)){
     state.selectedClass=next.styleClass;renderProperties();
     const target=$('#style-rule-target');target?.closest('details')?.setAttribute('open','');
@@ -390,14 +402,26 @@ function missionAction(stepId){
   }
   if(next.spacing){const field=$('[data-style="padding"]');field?.closest('details')?.setAttribute('open','');field?.focus();}
   if(next.flex){$('#property-flex-enabled')?.closest('details')?.setAttribute('open','');$('#property-flex-enabled')?.focus({preventScroll:true});}
-  if(next.action==='gallery'&&node)openGallery();
-  const focus=next.spacing?$('[data-style="padding"]'):next.flex?$('#property-flex-enabled'):next.styleClass?$('#style-rule-target'):$('#property-text')||$('#property-class');
-  if(focus?.closest('details'))focus.closest('details').open=true;
+  if(next.action==='gallery'&&node&&options.openGallery!==false)openGallery();
+  let focus=next.spacing?$('[data-style="padding"]'):next.flex?$('#property-flex-enabled'):next.styleClass?$('#style-rule-target'):$('#property-text')||$('.block-row.selected > .node-class-input');
+  if(next.id==='page-background')focus=$('[data-style="background"]');
+  if(next.id==='text-width')focus=$('#max-width-value');
+  if(['photo-settings','photo-small'].includes(next.id))focus=$('[data-style="width"]');
+  const needsBlock=!next.done&&(['hero-item','hero-img','interests-article'].includes(next.id)||/^card-/.test(next.id)||(/^(title|description)-/.test(next.id)&&node?.tagName!=='P')||/^picture-/.test(next.id));
+  if(needsBlock){
+    const key=next.id==='hero-item'||/^card-/.test(next.id)?'div':next.id==='interests-article'?'article':/^(title|description)-/.test(next.id)?'p':'img';
+    if(options.openGallery!==false){$('#block-library').open=true;focus=$('#library-items [data-block="'+key+'"]');}
+    else focus=$('#block-library > summary');
+  }
+
+  if(focus?.tagName!=='SUMMARY'&&focus?.closest('details'))focus.closest('details').open=true;
   focus?.focus({preventScroll:true});
   focus?.scrollIntoView({block:'nearest'});
+  document.querySelectorAll('.step-target').forEach(el=>el.classList.remove('step-target'));
+  (focus?.closest('label')||focus?.closest('.block-row')||focus||$('.block-row.selected'))?.classList.add('step-target');
 }
 
-function openGallery(){flushSource();stopPhoneUpload();imageTargetPath=state.selectedPath;galleryFilter='Все';$('#image-upload-status').textContent='';renderGallery();$('#gallery-dialog').showModal();}
+function openGallery(){$('#block-library').open=false;flushSource();stopPhoneUpload();imageTargetPath=state.selectedPath;galleryFilter='Все';$('#image-upload-status').textContent='';renderGallery();$('#gallery-dialog').showModal();}
 function renderGallery(){
   $('#gallery-filters').innerHTML=['Все','Природа','Космос','Увлечения'].map(category=>`<button data-gallery-filter="${category}" class="${category===galleryFilter?'active':''}" aria-pressed="${category===galleryFilter}">${category}</button>`).join('');
   $('#gallery-grid').innerHTML=IMAGES.filter(item=>galleryFilter==='Все'||item.category===galleryFilter).map(item=>`<button class="gallery-item" data-image="${item.id}" aria-label="Выбрать: ${item.title}"><img src="${new URL(item.file,location.href).href}" alt="${item.alt}" width="240" height="160"><span>${item.title}</span></button>`).join('');
@@ -637,6 +661,7 @@ function updateMissions(){
   const earlierIncomplete=progress.findIndex((item,i)=>i<state.mission&&!item.complete);
   const status=current.complete?(earlierIncomplete>=0?`Эта задача выполнена. Вернись к задаче ${earlierIncomplete+1}: в ней остались незавершённые шаги.`:state.mission<MISSIONS.length-1?'Задача выполнена! Можно переходить к следующей.':'Все три задачи выполнены! Сохрани страницу и посмотри результат.'):current.next.label;
   $('#next-step').textContent=status;
+  $('.next-action').classList.remove('needs-attention');
   $('#next-step-label').textContent=current.complete?'Готово':'Сейчас сделай';
   $('#task-success').hidden=!current.complete;
   $('#task-success').textContent=current.complete?'Поздравляем, 100%! '+status:'';
@@ -684,7 +709,7 @@ function enterMission(index){
 }
 function checkMission(){
   flushSource();updateMissions();const result=WorkshopLesson.progress(lessonChecks()[state.mission]);
-  if(!result.complete){$('#hint-box').hidden=false;updateMissions();toast(`Выполнено ${result.percent}%. Следующий шаг: ${result.next.label}`);return;}
+  if(!result.complete){missionAction(result.next.id,{openGallery:false,userAction:false});$('#hint-box').hidden=true;$('.next-action').classList.add('needs-attention');$('.task-details').open=true;$('.task-popover').scrollTop=0;const step=$('[data-task-step="'+result.next.id+'"]');step?.scrollIntoView({block:'nearest'});step?.focus({preventScroll:true});toast(`Выполнено ${result.percent}%. Осталось ${result.total-result.done}. ${result.next.label}`);return;}
   const earlier=completion().findIndex((done,i)=>i<state.mission&&!done);
   if(earlier>=0){enterMission(earlier);return;}
   if(state.mission<MISSIONS.length-1)enterMission(state.mission+1);
@@ -744,13 +769,16 @@ async function restoreCode(){if(transferBusy)return;transferBusy=true;$('#restor
 function libraryButton(block){return `<button class="library-item" draggable="true" data-block="${block.key}" title="${escapeHTML(block.hint)}"><b>${block.tag}</b>${block.name}</button>`;}
 $('#library-items').innerHTML=BLOCKS.map(libraryButton).join('');
 document.addEventListener('click',event=>{
-  if(!event.target.closest('.task-details'))$('.task-details').open=false;
+  if(!event.target.closest('.task-details')&&!event.target.closest('#check-button'))$('.task-details').open=false;
+  if(event.target.closest('#close-task-list'))$('.task-details').open=false;
+  if(!event.target.closest('.project-menu')||event.target.closest('.project-menu button'))$('.project-menu').open=false;
+  if(event.target.closest('#close-block-library'))$('#block-library').open=false;
   const stepButton=event.target.closest('[data-task-step]');if(stepButton)missionAction(stepButton.dataset.taskStep);
   const theoryButton=event.target.closest('[data-theory-page]');if(theoryButton)showTheoryPage(Number(theoryButton.dataset.theoryPage));
   if(event.target.closest('#theory-next'))showTheoryPage(Number($('#theory-next').dataset.nextPage));
 
   const target=event.target;
-  if(target.closest('[data-class-path]'))return;
+  if(target.closest('[data-class-path],[data-text-path]'))return;
   const clearClasses=target.closest('[data-clear-block-classes]');
   if(clearClasses){const input=clearClasses.closest('.block-row').querySelector('[data-class-path]');input.value='';commitBlockClass(input);toast('Классы сняты с блока. Их стили доступны другим блокам.');return;}
   const deleteBlock=target.closest('[data-delete-block]');if(deleteBlock){nodeAction('delete',deleteBlock.dataset.deleteBlock);return;}
@@ -760,7 +788,7 @@ document.addEventListener('click',event=>{
   const fold=target.closest('[data-fold]');if(fold){const path=fold.dataset.fold;if(fold.getAttribute('aria-expanded')==='true'){collapsedNodes.add(path);expandedEmptyNodes.delete(path);}else{collapsedNodes.delete(path);expandedEmptyNodes.add(path);}renderTree();return;}
   const crumb=target.closest('[data-select-path]');if(crumb)selectPath(crumb.dataset.selectPath,true);
   const preset=target.closest('[data-position]');if(preset){const node=resolvePath(parseHTML(),state.selectedPath),column=styleValue(node,'flex-direction','row')==='column';const positions={center:['center','center'],left:column?['center','flex-start']:['flex-start','center'],bottom:column?['flex-end','center']:['center','flex-end']};const [justify,align]=positions[preset.dataset.position];applyStyles({display:'flex','justify-content':justify,'align-items':align});}
-  const row=target.closest('.block-row');if(row&&!dragPayload)selectPath(row.dataset.path,true);
+  const row=target.closest('.block-row');if(row&&!dragPayload&&!target.closest('#content-properties'))selectPath(row.dataset.path,true,{keepTree:true});
   const block=target.closest('[data-block]');if(block&&!dragPayload){if(block.dataset.block==='img')openGallery();else addBlock(block.dataset.block);}
   const action=target.closest('[data-node-action]');if(action)nodeAction(action.dataset.nodeAction);
   const mission=target.closest('[data-mission]');if(mission&&!mission.disabled)enterMission(Number(mission.dataset.mission));
@@ -776,8 +804,19 @@ document.addEventListener('click',event=>{
   const project=target.closest('[data-open-project]');if(project)openProject(project.dataset.openProject);
   const version=target.closest('[data-version-project]');if(version)restoreVersion(version.dataset.versionProject,Number(version.dataset.version));
 });
-$('#block-tree').addEventListener('focusin',event=>{const input=event.target.closest('[data-class-path]');if(!input)return;input.closest('.block-row').draggable=false;selectPath(input.dataset.classPath,true,{keepTree:true});});
-$('#block-tree').addEventListener('focusout',event=>{const input=event.target.closest('[data-class-path]');if(input)input.closest('.block-row').draggable=true;});
+function sizeInlineText(){document.querySelectorAll('[data-text-path]').forEach(input=>{input.style.height='auto';const height=input.scrollHeight+2;input.style.height=Math.max(30,Math.min(132,height))+'px';input.style.overflowY=height>132?'auto':'hidden';});}
+$('#block-tree').addEventListener('input',event=>{
+  const input=event.target.closest('[data-text-path]');if(!input)return;
+  mutateHTML(doc=>{const node=resolvePath(doc,input.dataset.textPath);if(!node)return;
+    if(['UL','OL'].includes(node.tagName))node.replaceChildren(...input.value.split('\n').filter(text=>text.trim()).map(text=>{const li=doc.createElement('li');li.textContent=text;return li;}));
+    else node.textContent=input.value;
+    return node;
+  },{refreshTree:false});
+  input.closest('.block-row').querySelector('.block-select').setAttribute('aria-label','Выбрать '+resolvePath(parseHTML(),input.dataset.textPath).tagName.toLowerCase()+': '+input.value.slice(0,70));
+  sizeInlineText();
+});
+$('#block-tree').addEventListener('focusin',event=>{const input=event.target.closest('[data-class-path],[data-text-path]');if(!input)return;input.closest('.block-row').draggable=false;selectPath(input.dataset.classPath||input.dataset.textPath,true,{keepTree:true});});
+$('#block-tree').addEventListener('focusout',event=>{const input=event.target.closest('[data-class-path],[data-text-path]');if(input)input.closest('.block-row').draggable=true;});
 $('#block-tree').addEventListener('change',event=>{if(event.target.matches('[data-class-path]'))commitBlockClass(event.target);});
 $('#block-tree').addEventListener('keydown',event=>{
   const input=event.target.closest('[data-class-path]');
@@ -790,7 +829,7 @@ $('#block-tree').addEventListener('keydown',event=>{
 });
 
 document.addEventListener('dragstart', (event) => {
-  if(event.target.closest('[data-class-path]'))return;
+  if(event.target.closest('input,textarea,select,#content-properties')){event.preventDefault();return;}
   if (pointerDrag) { event.preventDefault(); return; }
   const block = event.target.closest('[data-block]'); const row = event.target.closest('.block-row');
   if (!block && !row) return;
@@ -804,7 +843,7 @@ document.addEventListener('dragend', () => { clearDragHighlights(); dragPayload 
 // Pointer dragging also works in embedded browsers and with touch input.
 document.addEventListener('pointerdown', (event) => {
   if (event.button !== 0) return;
-  if (event.target.closest('[data-class-path],[data-clear-block-classes],[data-delete-block]')) return;
+  if (event.target.closest('input,textarea,select,#content-properties,[data-clear-block-classes],[data-delete-block]')) return;
   const source = event.target.closest('[data-block],.block-row');
   if (!source) return;
   pointerDrag = { source, id: event.pointerId, x: event.clientX, y: event.clientY, active: false, payload: source.dataset.block ? 'new:' + source.dataset.block : 'move:' + source.dataset.path };
@@ -844,6 +883,7 @@ document.addEventListener('pointercancel', () => { pointerDrag = null; dragPaylo
 document.addEventListener('click', (event) => { if (Date.now() < suppressClickUntil) { event.preventDefault(); event.stopImmediatePropagation(); } }, true);
 $('.workspace').addEventListener('input',event=>{
   const target=event.target;
+  if(target.dataset.textPath!==undefined)return;
   if(target.id.startsWith('property-')&&!['property-class','property-flex-enabled','property-flex-wrap'].includes(target.id))applyProperty(target.id,target.value);
   if(target.hasAttribute('data-background-transparency')){
     target.closest('label').querySelector('output').textContent=target.value+'%';
@@ -899,6 +939,8 @@ $('#save-button').addEventListener('click',saveProject);
 $('#project-title').addEventListener('input',event=>{state.name=event.target.value.trim().slice(0,60)||'Мой сайт';saveDraft();});
 $('#projects-button').addEventListener('click',renderProjects);
 $('#create-project-button').addEventListener('click',createProject);
+$('#new-project-button').addEventListener('click',createProject);
+$('#block-library').addEventListener('toggle',()=>{if($('#block-library').open)renderProperties();});
 $('#result-button').addEventListener('click',showResult);
 $('#view-result-button').addEventListener('click',showFullscreen);
 $('#fullscreen-button').addEventListener('click',showFullscreen);
@@ -907,10 +949,11 @@ $('#import-project-button').addEventListener('click',()=>openTransfer('import'))
 $('#restore-code-button').addEventListener('click',restoreCode);
 $('#copy-code-button').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('#project-code-text').value);$('#code-transfer-status').textContent='Код скопирован. Сохрани его в доступном месте.';}catch(_){$('#project-code-text').select();$('#code-transfer-status').textContent='Код выделен. Нажми Ctrl+C или ⌘C.';}});
 new ResizeObserver(scalePreview).observe($('#preview-stage'));
+new ResizeObserver(sizeInlineText).observe($('#builder-panel'));
 $('#preview-frame').addEventListener('load',()=>{if(pendingPreviewFocus){$('#preview-frame').contentWindow.postMessage({channel:'web-lab',nonce:previewNonce,focusPath:pendingPreviewFocus},'*');pendingPreviewFocus=null;}});
 window.addEventListener('beforeunload',()=>{flushSource();clearTimeout(saveTimer);persistState();});
 renderProjectHeader();
 
 renderEditor(); updatePreview(); updateMissions(); persistState();showTaskIfNeeded();
 
-document.addEventListener('keydown',event=>{if(event.key==='Escape')$('.task-details').open=false;});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'){$('.task-details').open=false;$('.project-menu').open=false;$('#block-library').open=false;}});
