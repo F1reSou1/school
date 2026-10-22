@@ -202,6 +202,7 @@ class PhotoHandoffTests(unittest.TestCase):
         self.assertEqual(self.request('/')[0], 200)
         self.assertEqual(self.request('/upload.html')[0], 200)
         self.assertEqual(self.request('/lesson.js')[0], 200)
+        self.assertEqual(self.request('/workshop.css')[0], 200)
         for path in ['/server.py', '/vendor/qrcodegen.py', '/assets/../server.py', '/../README.md']:
             self.assertEqual(self.request(path)[0], 404)
 

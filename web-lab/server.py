@@ -133,7 +133,7 @@ class Handler(SimpleHTTPRequestHandler):
                 if path.endswith('/qr'):
                     return self.respond(200, qr_svg(session['upload_url']), 'image/svg+xml')
                 return self.respond(200, {'image': session.get('image')})
-        if path not in ('/', '/index.html', '/app.js', '/app.css', '/lesson.js', '/photo.js',
+        if path not in ('/', '/index.html', '/app.js', '/app.css', '/workshop.css', '/lesson.js', '/photo.js',
                         '/upload.html', '/upload.js', '/upload.css', '/favicon.ico'):
             asset = ROOT / path.lstrip('/')
             if not path.startswith('/assets/') or not asset.resolve().is_relative_to(ROOT / 'assets'):

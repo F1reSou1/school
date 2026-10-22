@@ -252,7 +252,7 @@ function renderTree(properties = true) {
     const itemCount=node.children.length+textNodes.length;
     const children=container?[...node.childNodes].map(child=>child.nodeType===1?row(child,nodePath(child,doc.body),depth+1):child.nodeType===3&&child.textContent.trim()?`<div class="direct-text">${escapeHTML(child.textContent.trim())}</div>`:'').join(''):'';
     const collapsed=container&&(collapsedNodes.has(path)||(!node.children.length&&!expandedEmptyNodes.has(path)));
-    return `<div class="tree-node ${container?'container-node':''} ${itemCount===0?'empty-node':''} ${collapsed?'scope-collapsed':''}" data-node-path="${path}" style="--level:${depth%4}"><div class="drop-line" data-drop="before" data-path="${path}"></div><div class="block-heading">${container?`<button class="fold-button" data-fold="${path}" aria-expanded="${!collapsed}" aria-label="${collapsed?'Раскрыть':'Свернуть'} ${tag}">${collapsed?'›':'⌄'}</button>`:'<span class="leaf-mark">·</span>'}<div class="block-row ${selected?'selected':''}" draggable="true" data-path="${path}" data-container="${container}" role="group" aria-label="${escapeHTML(tag)}"><button type="button" class="block-select" aria-label="${escapeHTML(tag+': '+summary.slice(0,70))}" aria-pressed="${selected}"><span class="tag-name ${container?'container':''}">&lt;${tag}&gt;</span><span class="node-summary">${escapeHTML(summary)}</span></button><input class="node-class-input" data-class-path="${path}" value="${escapeHTML(className)}" placeholder="класс" aria-label="CSS-классы элемента ${tag}" title="Например hero__item. CSS-классы без точки, через пробел. Enter — сохранить, Esc — отменить." autocomplete="off" autocapitalize="off" spellcheck="false">${container?'<span class="scope-inline" aria-hidden="true">{ }</span>':''}<div class="block-row-actions"><button type="button" data-clear-block-classes="${path}" ${className?'':'disabled'}>Снять классы</button><button type="button" data-delete-block="${path}" class="delete-block-button">Удалить блок</button></div></div></div>${container?`<div class="scope-content"><div class="scope-open" data-drop="inside" data-path="${path}" aria-hidden="true">{ </div><div class="scope-body" data-drop="inside" data-path="${path}">${children}<div class="nesting-drop" data-drop="inside" data-path="${path}">+ Вложить в &lt;${tag}&gt;</div></div><div class="scope-close" data-drop="inside" data-path="${path}"><b>}</b><span>&lt;/${tag}&gt;</span></div></div>`:''}<div class="drop-line" data-drop="after" data-path="${path}"></div></div>`;
+    return `<div class="tree-node ${container?'container-node':''} ${itemCount===0?'empty-node':''} ${collapsed?'scope-collapsed':''}" data-node-path="${path}" data-tag="${tag}" style="--level:${depth%4}"><div class="drop-line" data-drop="before" data-path="${path}"></div><div class="block-heading">${container?`<button class="fold-button" data-fold="${path}" aria-expanded="${!collapsed}" aria-label="${collapsed?'Раскрыть':'Свернуть'} ${tag}">${collapsed?'›':'⌄'}</button>`:'<span class="leaf-mark">·</span>'}<div class="block-row ${selected?'selected':''}" draggable="true" data-path="${path}" data-container="${container}" role="group" aria-label="${escapeHTML(tag)}"><button type="button" class="block-select" aria-label="${escapeHTML(tag+': '+summary.slice(0,70))}" aria-pressed="${selected}"><span class="tag-name ${container?'container':''}">&lt;${tag}&gt;</span><span class="node-summary">${escapeHTML(summary)}</span></button><input class="node-class-input" data-class-path="${path}" value="${escapeHTML(className)}" placeholder="класс" aria-label="CSS-классы элемента ${tag}" title="Например hero__item. CSS-классы без точки, через пробел. Enter — сохранить, Esc — отменить." autocomplete="off" autocapitalize="off" spellcheck="false">${container?'<span class="scope-inline" aria-hidden="true">{ }</span>':''}<div class="block-row-actions"><button type="button" data-clear-block-classes="${path}" ${className?'':'disabled'}>Снять классы</button><button type="button" data-delete-block="${path}" class="delete-block-button">Удалить блок</button></div></div></div>${container?`<div class="scope-content"><div class="scope-open" data-drop="inside" data-path="${path}" aria-hidden="true">{ </div><div class="scope-body" data-drop="inside" data-path="${path}">${children}<div class="nesting-drop" data-drop="inside" data-path="${path}">+ Вложить в &lt;${tag}&gt;</div></div><div class="scope-close" data-drop="inside" data-path="${path}"><b>}</b><span>&lt;/${tag}&gt;</span></div></div>`:''}<div class="drop-line" data-drop="after" data-path="${path}"></div></div>`;
   }
   $('#block-tree').innerHTML=[...doc.body.children].filter(node=>node.tagName!=='SCRIPT').map(node=>row(node,nodePath(node,doc.body),0)).join('');
   if(properties)renderProperties(doc);
@@ -261,14 +261,20 @@ function revealPath(path){
   const parts=path.split('.');
   for(let i=1;i<=parts.length;i++)collapsedNodes.delete(parts.slice(0,i).join('.'));
 }
+function simpleClassRules(){
+  return [...state.files['style.css'].replace(/\/\*[\s\S]*?\*\//g,'').matchAll(/(?:^|(?<=}))\s*\.([A-Za-z_][\w-]*)\s*\{([^}]*)}/g)].map(match=>{const style=document.createElement('div').style;style.cssText=match[2];return {name:match[1],style};});
+}
+function mergeDeclarations(target,source){
+  for(const property of source){const priority=source.getPropertyPriority(property);if(target.getPropertyPriority(property)==='important'&&priority!=='important')continue;target.setProperty(property,source.getPropertyValue(property),priority);}
+}
 function computedBlockStyle(node){
   const style=document.createElement('div').style;
-  for(const name of validClasses(node)) for(const property of classStyle(name)) style.setProperty(property,classStyle(name).getPropertyValue(property));
-  return style;
+  for(const rule of simpleClassRules())if(node.classList.contains(rule.name))mergeDeclarations(style,rule.style);
+  mergeDeclarations(style,node.style);return style;
 }
 function findClasses() { return [...new Set([...state.files['style.css'].matchAll(/\.([A-Za-z_][\w-]*)\s*\{/g)].map((m) => m[1]))]; }
 function classPattern(name){return new RegExp('(^|\\n)[ \\t]*\\.'+name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\s*\\{([^}]*?)\\}');}
-function classStyle(name){const el=document.createElement('div');el.style.cssText=state.files['style.css'].match(classPattern(name))?.[2]||'';return el.style;}
+function classStyle(name){const style=document.createElement('div').style;for(const rule of simpleClassRules())if(rule.name===name)mergeDeclarations(style,rule.style);return style;}
 function validClasses(node){return [...node.classList].filter(name=>/^[A-Za-z_][\w-]*$/.test(name));}
 function activeClass(node){if(state.selectedClass==='__own__')return null;const names=validClasses(node);return names.includes(state.selectedClass)?state.selectedClass:names.at(-1)||null;}
 function styleValue(node,property,fallback){const name=activeClass(node);return name?classStyle(name).getPropertyValue(property).trim()||fallback:fallback;}
@@ -302,14 +308,15 @@ function applyPaddingSide(input){
 function selectControl(id,property,title,value,options){return `<label>${title}<select id="${id}" data-style="${property}">${options.map(([key,text])=>`<option value="${key}" ${key===value?'selected':''}>${text}</option>`).join('')}</select></label>`;}
 function renderProperties(doc=parseHTML()){
   const node=resolvePath(doc,state.selectedPath);
-  if(!node){$('#element-properties').innerHTML='<p class="property-help">Выбери блок в структуре или прямо в предпросмотре.</p>';return;}
+  if(!node){$('#content-properties').innerHTML='';$('#element-properties').innerHTML='<p class="property-help">Выбери блок в структуре или прямо в предпросмотре.</p>';return;}
   const tag=node.tagName.toLowerCase(),container=CONTAINERS.has(tag),isList=['ul','ol'].includes(tag),editable=(!container||(!node.children.length&&Boolean(node.textContent.trim())))&&!VOID_TAGS.has(tag);
   const value=isList?[...node.children].map(li=>li.textContent).join('\n'):node.textContent;
   let fields=editable?`<label>${isList?'Пункты · один на строку':'Содержимое'}${isList||tag==='p'||value.length>80?`<textarea id="property-text" rows="3">${escapeHTML(value)}</textarea>`:`<input id="property-text" value="${escapeHTML(value)}">`}</label>`:'';
   if(container)fields+=`<label>Тег<select id="semantic-tag">${Object.keys(SEMANTICS).map(t=>`<option value="${t}" ${t===tag?'selected':''}>${t} — ${({main:'главное',header:'вступление',section:'раздел',footer:'завершение',figure:'картинка',div:'нейтральный блок',article:'история',nav:'навигация',aside:'дополнение'})[t]}</option>`).join('')}</select></label>`;
   if(tag==='a')fields+=`<label>Адрес ссылки · href<input id="property-href" value="${escapeHTML(node.getAttribute('href')||'')}"></label>`;
   if(tag==='img')fields+=`<img class="image-property-thumb" src="${escapeHTML(node.getAttribute('src')||'')}" alt="Текущая картинка"><button id="property-image" class="image-choose-button">Заменить картинку</button><label>Описание · alt (необязательно)<input id="property-alt" value="${escapeHTML(node.getAttribute('alt')||'')}" placeholder="Можно оставить пустым"></label>`;
-  if(tag==='img'){const imageStyle=computedBlockStyle(node);fields+=slider('width','Ширина картинки',parseInt(imageStyle.width)||420,60,420);}
+  const imageWidth=tag==='img'?slider('width','Ширина картинки',parseInt(computedBlockStyle(node).width)||420,60,420):'';
+  const primaryFields=container?'':fields;fields=container?fields:'';
   fields+=`<label>CSS-классы<div class="class-field-row"><input id="property-class" value="${escapeHTML(node.getAttribute('class')||'')}" list="class-list" placeholder="блок__элемент"><button id="property-new-class" aria-label="Создать CSS-класс" title="Создать общий класс">+</button></div><datalist id="class-list">${findClasses().map(name=>`<option value="${escapeHTML(name)}"></option>`).join('')}</datalist>${validClasses(node).length?`<div class="assigned-classes">${validClasses(node).map(name=>`<span class="assigned-class"><button data-edit-class="${name}">.${name}</button><button class="remove-class-button" data-remove-class="${name}" aria-label="Снять класс ${name} с блока" title="Снять класс с этого блока">Снять</button></span>`).join('')}</div>`:''}</label>`;
   const parents=[...doc.body.querySelectorAll('*')].filter(el=>CONTAINERS.has(el.tagName.toLowerCase())&&el!==node&&!node.contains(el));
   fields+=`<label>Родитель<select id="parent-container"><option value="" ${node.parentElement===doc.body?'selected':''}>body — корень страницы</option>${parents.map(el=>{const path=nodePath(el,doc.body);return `<option value="${path}" ${el===node.parentElement?'selected':''}>${'· '.repeat(path.split('.').length-1)}${el.tagName.toLowerCase()}${el.className?'.'+el.className.trim().split(/\s+/).join('.'):''}</option>`;}).join('')}</select></label>`;
@@ -320,16 +327,17 @@ function renderProperties(doc=parseHTML()){
   const spacingFields=`<details class="inspector-section" open><summary>Отступы и углы</summary><div class="style-fields"><div class="style-target-note">${name?'.'+escapeHTML(name):'Стиль выбранного элемента'}</div>${paddingControls(style)}${slider('border-radius','Скругление углов',radius,0,Math.max(120,radius))}</div></details>`;
   const transparency=backgroundTransparency(style);
   const colorFields=`<div class="${tag!=='img'?'field-pair':''}">${tag!=='img'?`<label>Текст<div class="color-control"><input type="color" value="${color}" data-style="color" aria-label="Цвет текста"><span>${color}</span></div></label>`:''}<label>Фон<div class="color-control"><input type="color" value="${background}" data-style="background" aria-label="Цвет фона"><span>${style.backgroundColor==='transparent'?'нет':background}</span></div></label></div><label><span class="slider-label-row"><span>Прозрачность фона</span><output>${transparency}%</output></span><input type="range" min="0" max="100" value="${transparency}" data-background-transparency aria-label="Прозрачность фона"><small>0% — сплошной фон, 100% — прозрачный.</small></label>${tag!=='img'?slider('font-size','Размер текста',font,10,72):''}`;
-  const styleFields=`<details class="inspector-section" open><summary>Оформление</summary><div class="style-fields"><details class="model-details"><summary>Блочная модель</summary><div class="box-model" aria-label="Блочная модель"><span>margin · снаружи</span><div><span>border · граница</span><div><span>padding · внутри</span><b>Содержимое &lt;${tag}&gt;</b></div></div></div></details><label>Стиль класса<select id="style-rule-target"><option value="">Отдельный стиль блока</option>${names.map(n=>`<option value="${n}" ${n===name?'selected':''}>.${n}</option>`).join('')}</select></label><div id="style-target-note" class="style-target-note">${name?'.'+escapeHTML(name):'Новый класс'}</div>${colorFields}${container?slider('width','Ширина блока',parseInt(style.width)||240,100,640):''}${widthLimit}${tag!=='img'?selectControl('text-align-control','text-align','Текст',style.textAlign||'left',[['left','Слева'],['center','По центру'],['right','Справа']]):''}${tag==='img'?selectControl('image-ratio-control','aspect-ratio','Пропорции',style.aspectRatio||'auto',[['auto','Исходные'],['16 / 9','16:9'],['1 / 1','1:1'],['3 / 4','3:4']])+selectControl('image-fit-control','object-fit','Вписать картинку',style.objectFit||'contain',[['contain','Целиком'],['cover','Заполнить рамку']]):''}</div></details>`;
+  const styleFields=`<details class="inspector-section" open><summary>Оформление</summary><div class="style-fields"><details class="model-details"><summary>Блочная модель</summary><div class="box-model" aria-label="Блочная модель"><span>margin · снаружи</span><div><span>border · граница</span><div><span>padding · внутри</span><b>Содержимое &lt;${tag}&gt;</b></div></div></div></details><label>Стиль класса<select id="style-rule-target"><option value="">Отдельный стиль блока</option>${names.map(n=>`<option value="${n}" ${n===name?'selected':''}>.${n}</option>`).join('')}</select></label><div id="style-target-note" class="style-target-note">${name?'.'+escapeHTML(name):'Новый класс'}</div>${imageWidth}${colorFields}${container?slider('width','Ширина блока',parseInt(style.width)||240,100,640):''}${widthLimit}${tag!=='img'?selectControl('text-align-control','text-align','Текст',style.textAlign||'left',[['left','Слева'],['center','По центру'],['right','Справа']]):''}${tag==='img'?selectControl('image-ratio-control','aspect-ratio','Пропорции',style.aspectRatio||'auto',[['auto','Исходные'],['16 / 9','16:9'],['1 / 1','1:1'],['3 / 4','3:4']])+selectControl('image-fit-control','object-fit','Вписать картинку',style.objectFit||'contain',[['contain','Целиком'],['cover','Заполнить рамку']]):''}</div></details>`;
   const flexOn=style.display==='flex',direction=style.flexDirection||'row',gap=Number.parseInt(style.gap)||0,justify=style.justifyContent||'flex-start',align=style.alignItems||'stretch';
   const flexFields=container?`<details class="inspector-section" open><summary>Расположение · Flexbox</summary><div class="flex-fields"><label class="checkbox-field"><input id="property-flex-enabled" type="checkbox" ${flexOn?'checked':''}> Включить Flexbox</label><div class="direction-buttons"><button data-direction="row" class="${flexOn&&direction==='row'?'active':''}">↔ В ряд</button><button data-direction="column" class="${flexOn&&direction==='column'?'active':''}">↕ Колонка</button></div>${slider('gap','Расстояние',gap,0,48)}${selectControl('justify-control','justify-content','justify-content · '+(direction==='row'?'↔ горизонталь':'↕ вертикаль'),justify,[['flex-start','В начале'],['center','По центру'],['space-between','Между краями'],['space-evenly','Равномерно'],['flex-end','В конце']])}${selectControl('align-control','align-items','align-items · '+(direction==='row'?'↕ вертикаль':'↔ горизонталь'),align,[['stretch','Растянуть'],['flex-start','В начале'],['center','По центру'],['flex-end','В конце']])}<div class="position-presets"><span>Положение</span><button data-position="center">Центр</button><button data-position="left">Слева</button><button data-position="bottom">Снизу</button></div><label class="checkbox-field"><input id="property-flex-wrap" type="checkbox" ${style.flexWrap==='wrap'?'checked':''}> Разрешить перенос · wrap</label><small class="flex-wrap-help">${direction==='row'?'Если места по ширине не хватит, дети перейдут на следующую строку.':'Для переноса в соседнюю колонку нужна ограниченная высота контейнера.'}</small></div></details>`:`<div class="flex-parent-link"><button id="jump-to-flex">Расположение у родителя →</button></div>`;
   const trail=[];let ancestor=node;while(ancestor&&ancestor!==doc.body){trail.unshift(`<button data-select-path="${nodePath(ancestor,doc.body)}">${ancestor.tagName.toLowerCase()}</button>`);ancestor=ancestor.parentElement;}
-  $('#element-properties').innerHTML=`<nav class="nesting-trail" aria-label="Вложенность выбранного блока">${trail.join('<span>›</span>')}</nav><div class="property-heading"><b>&lt;${tag}&gt;</b><div class="node-actions"><button data-node-action="up" aria-label="Переместить элемент выше">↑</button><button data-node-action="down" aria-label="Переместить элемент ниже">↓</button><button data-node-action="duplicate" aria-label="Дублировать элемент">⧉</button><button data-node-action="delete" class="delete-block-button" aria-label="Удалить блок">Удалить блок</button></div></div>${container&&state.mission===2?flexFields:''}<div class="property-fields">${fields}</div>${spacingFields}${styleFields}${container&&state.mission===2?'':flexFields}`;
+  $('#content-properties').innerHTML=`<nav class="nesting-trail" aria-label="Вложенность выбранного блока">${trail.join('<span>›</span>')}</nav><div class="property-heading"><b>&lt;${tag}&gt;</b><div class="node-actions"><button data-node-action="up" aria-label="Переместить элемент выше">↑</button><button data-node-action="down" aria-label="Переместить элемент ниже">↓</button><button data-node-action="duplicate" aria-label="Дублировать элемент">⧉</button><button data-node-action="delete" class="delete-block-button" aria-label="Удалить блок">Удалить блок</button></div></div><div class="property-fields">${primaryFields}<details class="content-meta"><summary>Классы и вложенность</summary><div class="property-fields">${fields}</div></details></div>`;
+  $('#element-properties').innerHTML=`<div class="selected-style"><span>Выбран элемент</span><b>&lt;${tag}&gt;${name?' .'+escapeHTML(name):''}</b></div>${styleFields}${container&&state.mission===2?flexFields:''}${spacingFields}${container&&state.mission===2?'':flexFields}`;
 }
 function putClassStyle(name,style){
-  const rule='.'+name+' {\n'+[...style].map(property=>'  '+property+': '+style.getPropertyValue(property)+';').join('\n')+'\n}';
+  const rule='.'+name+' {\n'+[...style].map(property=>'  '+property+': '+style.getPropertyValue(property)+(style.getPropertyPriority(property)?' !important':'')+';').join('\n')+'\n}';
   const pattern=classPattern(name);
-  state.files['style.css']=pattern.test(state.files['style.css'])?state.files['style.css'].replace(pattern,(_,lead)=>lead+rule):state.files['style.css']+'\n\n/* Настройки блока */\n'+rule;
+  state.files['style.css']=state.files['style.css'].replace(new RegExp(pattern.source,'g'),(_,lead)=>lead).trimEnd()+'\n\n'+rule;
 }
 function applyStyles(changes,live=false){
   flushSource();const doc=parseHTML(),node=resolvePath(doc,state.selectedPath);if(!node)return;
@@ -366,14 +374,15 @@ function jumpToFlex(){
   const node=parent&&CONTAINERS.has(parent.tagName.toLowerCase())?parent:doc.querySelector('.hero__img')||doc.querySelector('img')?.parentElement;
   if(node)selectPath(nodePath(node,doc.body));
 }
-function missionAction(){
+function missionAction(stepId){
   flushSource();
   const doc=parseHTML(),checks=lessonChecks(doc)[state.mission];
-  const next=WorkshopLesson.progress(checks).next;
+  const next=checks.find(item=>item.id===stepId)||WorkshopLesson.progress(checks).next;
   if(!next)return;
+  $('.task-details').open=false;
   let node=next.node||doc.querySelector(next.selector||'');
   if(!node)node=doc.querySelector(state.mission===0?'main.page':state.mission===1?'header.hero':'section#interests,section.interests');
-  if(node)selectPath(nodePath(node,doc.body));
+  if(node)selectPath(nodePath(node,doc.body),typeof stepId==='string'||stepId?.type==='click');
   if(next.styleClass&&node?.classList.contains(next.styleClass)){
     state.selectedClass=next.styleClass;renderProperties();
     const target=$('#style-rule-target');target?.closest('details')?.setAttribute('open','');
@@ -382,6 +391,10 @@ function missionAction(){
   if(next.spacing){const field=$('[data-style="padding"]');field?.closest('details')?.setAttribute('open','');field?.focus();}
   if(next.flex){$('#property-flex-enabled')?.closest('details')?.setAttribute('open','');$('#property-flex-enabled')?.focus({preventScroll:true});}
   if(next.action==='gallery'&&node)openGallery();
+  const focus=next.spacing?$('[data-style="padding"]'):next.flex?$('#property-flex-enabled'):next.styleClass?$('#style-rule-target'):$('#property-text')||$('#property-class');
+  if(focus?.closest('details'))focus.closest('details').open=true;
+  focus?.focus({preventScroll:true});
+  focus?.scrollIntoView({block:'nearest'});
 }
 
 function openGallery(){flushSource();stopPhoneUpload();imageTargetPath=state.selectedPath;galleryFilter='Все';$('#image-upload-status').textContent='';renderGallery();$('#gallery-dialog').showModal();}
@@ -462,6 +475,7 @@ function commitSource() {
 }
 function addBlock(key, targetPath = null, position = 'append') {
   const block = BLOCKS.find((b) => b.key === key); if (!block) return;
+  $('#block-library').open=false;
   if(key==='img'&&!state.imagesChosen.includes('mountains'))state.imagesChosen.push('mountains');
   mutateHTML((doc) => {
     const temp = doc.createElement('template'); temp.innerHTML = block.html; const element = temp.content.firstElementChild;
@@ -600,6 +614,14 @@ function lessonChecks(doc=parseHTML()){
   return WorkshopLesson.checks(doc,(node,name)=>name?classStyle(name):computedBlockStyle(node),state,IMAGES.flatMap(image=>[image.file,new URL(image.file,location.href).href]));
 }
 function completion(){return lessonChecks().map(items=>WorkshopLesson.progress(items).complete);}
+function stepCluster(id,mission){
+  if(mission===0)return id.startsWith('page-')?'01 / Фон страницы':'02 / Знакомство';
+  if(mission===1)return ['hero-item','hero-text'].includes(id)?'01 / Объедини текст':['hero-img','photo-source'].includes(id)?'02 / Добавь картинку':'03 / Настрой ширину';
+  if(['hero-row','photo-small'].includes(id))return '01 / Текст и фото рядом';
+  if(id==='interests-article')return '02 / Подборка интересов';
+  const card=id.match(/^(?:card|title|description)-(\d)$/);if(card)return '03 / Карточка '+(Number(card[1])+1);
+  return id.startsWith('picture-')?'04 / Две картинки':'05 / Общий стиль и отступы';
+}
 function updateMissions(){
   const groups=lessonChecks(),progress=groups.map(WorkshopLesson.progress),current=progress[state.mission],mission=MISSIONS[state.mission];
   $('#progress-count').textContent=`${progress.filter(item=>item.complete).length} / ${MISSIONS.length}`;
@@ -615,22 +637,36 @@ function updateMissions(){
   const earlierIncomplete=progress.findIndex((item,i)=>i<state.mission&&!item.complete);
   const status=current.complete?(earlierIncomplete>=0?`Эта задача выполнена. Вернись к задаче ${earlierIncomplete+1}: в ней остались незавершённые шаги.`:state.mission<MISSIONS.length-1?'Задача выполнена! Можно переходить к следующей.':'Все три задачи выполнены! Сохрани страницу и посмотри результат.'):current.next.label;
   $('#next-step').textContent=status;
-  $('#next-step-label').textContent=current.complete?'Отлично!':'Следующий шаг';
+  $('#next-step-label').textContent=current.complete?'Готово':'Сейчас сделай';
   $('#task-success').hidden=!current.complete;
   $('#task-success').textContent=current.complete?'Поздравляем, 100%! '+status:'';
   $('#mission-action-button').hidden=current.complete;
   $('#check-button').textContent=current.complete?(earlierIncomplete>=0?`К задаче ${earlierIncomplete+1}`:state.mission<MISSIONS.length-1?'Следующая задача →':'Сохранить страницу'):'Проверить';
-  $('#task-checklist').innerHTML=groups[state.mission].map(item=>`<li class="${item.done?'done':''}"><span aria-hidden="true">${item.done?'✓':'○'}</span>${escapeHTML(item.label)}</li>`).join('');
+  const clusters=new Map();
+  for(const item of groups[state.mission]){const title=stepCluster(item.id,state.mission);if(!clusters.has(title))clusters.set(title,[]);clusters.get(title).push(item);}
+  $('#task-checklist').innerHTML=[...clusters].map(([title,items])=>`<section class="step-cluster"><h3>${title}<small>${items.filter(item=>item.done).length}/${items.length}</small></h3><ol>${items.map(item=>`<li class="${item.done?'done':''} ${item===current.next?'current':''}"><button data-task-step="${item.id}"><span aria-hidden="true">${item.done?'✓':item===current.next?'→':'○'}</span>${escapeHTML(item.label)}</button></li>`).join('')}</ol></section>`).join('');
   if(!$('#hint-box').hidden)$('#hint-box').textContent=mission.hint;
   const key=library.activeId+':'+state.mission,previous=taskPercentages.get(key);
   taskPercentages.set(key,current.percent);
   if(previous!==undefined&&previous<100&&current.complete)toast(`Поздравляем! Задача ${state.mission+1} выполнена на 100%. ${progress.every(item=>item.complete)?'Все задачи пройдены.':earlierIncomplete>=0?'Проверь предыдущие задачи.':'Можно переходить к следующей.'}`);
 }
+function showTheoryPage(index){
+  const pages=[...document.querySelectorAll('.theory-page')];
+  pages.forEach((page,i)=>page.hidden=i!==index);
+  document.querySelectorAll('[data-theory-page]').forEach((button,i)=>button.setAttribute('aria-current',i===index?'step':'false'));
+  $('#theory-next').hidden=index>=pages.length-1;$('#theory-next').dataset.nextPage=String(index+1);
+  $('#theory-content').scrollTop=0;
+}
 function openTaskTheory(){
   const mission=MISSIONS[state.mission];
   $('#theory-step').textContent=`Задача ${state.mission+1} из ${MISSIONS.length}`;
   $('#theory-title').textContent=mission.title;
-  $('#theory-content').innerHTML=mission.theory;
+  const template=document.createElement('template');template.innerHTML=mission.theory;
+  const sections=[];let section;
+  for(const child of [...template.content.children]){if(child.tagName==='H3'||!section){section=document.createElement('section');section.className='theory-page';sections.push(section);}section.append(child);}
+  $('#theory-content').replaceChildren(...sections);
+  $('#theory-nav').innerHTML=sections.map((part,i)=>`<button data-theory-page="${i}">${String(i+1).padStart(2,'0')}<span>${escapeHTML(part.querySelector('h3')?.textContent||'Объяснение')}</span></button>`).join('');
+  showTheoryPage(0);
   $('#theory-task').innerHTML=mission.task.map(text=>`<li>${escapeHTML(text)}</li>`).join('');
   $('#theory-sources').innerHTML=mission.sources.map(([name,url])=>`<a href="${url}" target="_blank" rel="noopener">${escapeHTML(name)}</a>`).join('');
   $('#theory-start').textContent=state.lessonStarted.includes(String(state.mission))?'Вернуться к задаче':'Начать задачу';
@@ -708,6 +744,11 @@ async function restoreCode(){if(transferBusy)return;transferBusy=true;$('#restor
 function libraryButton(block){return `<button class="library-item" draggable="true" data-block="${block.key}" title="${escapeHTML(block.hint)}"><b>${block.tag}</b>${block.name}</button>`;}
 $('#library-items').innerHTML=BLOCKS.map(libraryButton).join('');
 document.addEventListener('click',event=>{
+  if(!event.target.closest('.task-details'))$('.task-details').open=false;
+  const stepButton=event.target.closest('[data-task-step]');if(stepButton)missionAction(stepButton.dataset.taskStep);
+  const theoryButton=event.target.closest('[data-theory-page]');if(theoryButton)showTheoryPage(Number(theoryButton.dataset.theoryPage));
+  if(event.target.closest('#theory-next'))showTheoryPage(Number($('#theory-next').dataset.nextPage));
+
   const target=event.target;
   if(target.closest('[data-class-path]'))return;
   const clearClasses=target.closest('[data-clear-block-classes]');
@@ -801,7 +842,7 @@ document.addEventListener('pointerup', (event) => {
 });
 document.addEventListener('pointercancel', () => { pointerDrag = null; dragPayload = null; $('#drag-ghost')?.remove(); clearDragHighlights(); });
 document.addEventListener('click', (event) => { if (Date.now() < suppressClickUntil) { event.preventDefault(); event.stopImmediatePropagation(); } }, true);
-$('#element-properties').addEventListener('input',event=>{
+$('.workspace').addEventListener('input',event=>{
   const target=event.target;
   if(target.id.startsWith('property-')&&!['property-class','property-flex-enabled','property-flex-wrap'].includes(target.id))applyProperty(target.id,target.value);
   if(target.hasAttribute('data-background-transparency')){
@@ -817,7 +858,7 @@ $('#element-properties').addEventListener('input',event=>{
   if(target.dataset.style==='padding')document.querySelectorAll('[data-padding-side]').forEach(input=>input.value=target.value);
   if(target.dataset.style&&target.tagName!=='SELECT'){const value=target.value+(target.dataset.unit||'');if(target.type==='range'){const output=target.closest('label').querySelector('output');if(output)output.textContent=value.replace('px',' px');applyStyles({[target.dataset.style]:value},true);}else{const text=target.parentElement.querySelector('span');if(text)text.textContent=target.value;applyStyles({[target.dataset.style]:value},true);}}
 });
-$('#element-properties').addEventListener('change',event=>{
+$('.workspace').addEventListener('change',event=>{
   const target=event.target;
   if(target.dataset.paddingSide)applyPaddingSide(target);
   if(target.id==='max-width-value'){
@@ -833,7 +874,7 @@ $('#element-properties').addEventListener('change',event=>{
   if(target.id==='property-flex-enabled')applyStyles(target.checked?flexLayoutChanges():{display:'block'});
   if(target.id==='property-flex-wrap')applyStyles({'flex-wrap':target.checked?'wrap':'nowrap'});
 });
-$('#element-properties').addEventListener('keydown',event=>{if(event.target.dataset.paddingSide&&event.key==='Enter'&&!event.isComposing){event.preventDefault();applyPaddingSide(event.target);}});
+$('.workspace').addEventListener('keydown',event=>{if(event.target.dataset.paddingSide&&event.key==='Enter'&&!event.isComposing){event.preventDefault();applyPaddingSide(event.target);}});
 $('#code-editor').addEventListener('input',()=>{updateLineNumbers();clearTimeout(sourceTimer);sourceTimer=setTimeout(commitSource,350);});
 $('#code-editor').addEventListener('scroll',()=>$('#line-numbers').scrollTop=$('#code-editor').scrollTop);
 $('#code-editor').addEventListener('keydown',event=>{if(event.key==='Tab'){event.preventDefault();const el=event.target;el.setRangeText('  ',el.selectionStart,el.selectionEnd,'end');el.dispatchEvent(new Event('input'));}});
@@ -871,3 +912,5 @@ window.addEventListener('beforeunload',()=>{flushSource();clearTimeout(saveTimer
 renderProjectHeader();
 
 renderEditor(); updatePreview(); updateMissions(); persistState();showTaskIfNeeded();
+
+document.addEventListener('keydown',event=>{if(event.key==='Escape')$('.task-details').open=false;});

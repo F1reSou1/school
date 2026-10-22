@@ -631,3 +631,33 @@ test('closing QR discards an in-flight image and a delayed create cannot replace
   assert.equal(transport.sessions.size,1,'abandoned create is revoked');
   ui.run('stopPhoneUpload()');assert.equal(transport.sessions.size,0);
 });
+
+test('redesign keeps content on the left, styles on the right and step navigation actionable',t=>{
+  const ui=editor(t);ui.click('#theory-start');
+  ui.click('.task-details summary');ui.click('[data-task-step="name"]');
+  assert.equal(ui.doc.querySelector('.task-details').open,false);
+  assert.ok(ui.doc.querySelector('#content-properties #property-text'));
+  assert.equal(ui.doc.activeElement.id,'property-text');
+  assert.ok(ui.doc.querySelector('#element-properties [data-style="color"]'));
+  const field=ui.doc.querySelector('#property-text');field.value='Привет, я Даша';field.dispatchEvent(new ui.win.Event('input',{bubbles:true}));
+  assert.equal(ui.run(`parseHTML().querySelector('h1').textContent`),'Привет, я Даша');
+  assert.ok(ui.run('lessonChecks()[0].find(item=>item.id==="name").done'));
+  ui.click('#theory-button');
+  assert.equal(ui.doc.querySelectorAll('.theory-page:not([hidden])').length,1);
+  ui.click('#theory-next');
+  assert.equal(ui.doc.querySelector('[data-theory-page="1"]').getAttribute('aria-current'),'step');
+  assert.equal(ui.doc.querySelectorAll('.theory-page:not([hidden])').length,1);
+});
+
+test('progress uses CSS rule order, repeated rules and important declarations instead of class attribute order',t=>{
+  const ui=editor(t);ui.click('#theory-start');finishFirst(ui);finishSecond(ui);
+  ui.run(`mutateHTML(doc=>{doc.querySelector('.hero__img img').className='narrow wide';});state.files['style.css']+='\\n.wide { width: 420px; }\\n.narrow { width: 220px; }';state.mission=1;updateMissions();`);
+  assert.equal(ui.percent(),'100%','later CSS wins even with reversed class names');
+  ui.run(`state.files['style.css']+='\\n.wide { width: 400px !important; }\\n.narrow { width: 200px; }';updateMissions();`);
+  assert.equal(ui.percent(),'83%','important width cannot be overridden by a normal declaration');
+  ui.run(`state.files['style.css']+='\\n.wide { width: 210px !important; }';updateMissions();`);
+  assert.equal(ui.percent(),'100%','last repeated rule wins with equal importance');
+  ui.run(`selectPath('0.0.1.0');state.selectedClass='wide';renderProperties();applyStyles({width:'230px'});`);
+  assert.equal(ui.run(`classStyle('wide').width`),'230px','editor updates repeated rules consistently');
+  assert.equal(ui.percent(),'100%');
+});
