@@ -46,5 +46,26 @@
     "source": "https://images.unsplash.com/photo-1439405326854-014607f694d7",
     "file": "assets/ocean.jpg",
     "license": "https://unsplash.com/license"
+  },
+  {
+    "id": "cat-window",
+    "title": "Рыжий кот",
+    "file": "assets/cat-window.jpg",
+    "author": "Generated with OpenAI image_gen",
+    "source": "AI-generated for the workshop"
+  },
+  {
+    "id": "skateboard",
+    "title": "Скейтборд",
+    "file": "assets/skateboard.jpg",
+    "author": "Generated with OpenAI image_gen",
+    "source": "AI-generated for the workshop"
+  },
+  {
+    "id": "ringed-planet",
+    "title": "Планета с кольцами",
+    "file": "assets/ringed-planet.jpg",
+    "author": "Generated with OpenAI image_gen",
+    "source": "AI-generated for the workshop"
   }
 ]

@@ -240,7 +240,7 @@ test('second task validates siblings, QR or library photo and settings with opti
 
 test('library fallback completes task two without QR and survives save and reload',t=>{
   const ui=editor(t);ui.click('#theory-start');finishFirst(ui);ui.click('#check-button');
-  assert.match(ui.doc.querySelector('#theory-content').textContent,/Если QR не работает/);
+  assert.match(ui.doc.querySelector('#theory-content').textContent,/Если не хочешь использовать QR/);
   ui.click('#theory-start');finishSecond(ui);
   ui.run(`state.qrImages=[];mutateHTML(doc=>doc.querySelector('.hero__img img').setAttribute('src',''));`);
   assert.equal(ui.percent(),'83%','empty image is incomplete');
@@ -850,4 +850,72 @@ test('second task has six illustrated steps and advances from structure to width
   assert.equal(ui.percent(),'100%');
   assert.equal(ui.doc.querySelectorAll('.step-strip .done').length,6);
   assert.equal(ui.doc.querySelectorAll('.step-guidance:not([hidden])').length,0);
+});
+
+test('an existing QR photo with class photo counts and guides to its missing hero class',t=>{
+  const ui=editor(t);ui.click('#theory-start');finishFirst(ui);buildHero(ui);
+  ui.run(`mutateHTML(doc=>{const figure=doc.querySelector('.hero__img'),img=figure.querySelector('img');img.className='photo';figure.replaceWith(img);return img;});state.mission=1;updateMissions();`);
+  const checks=ui.run('lessonChecks()[1]');
+  assert.equal(checks.find(item=>item.id==='hero-img').done,false);
+  assert.equal(checks.find(item=>item.id==='photo-source').done,true,'uploaded photo counts before the class is assigned');
+  ui.run(`missionAction('hero-img');`);
+  assert.equal(ui.doc.querySelector('#block-library').open,false,'do not suggest a duplicate image');
+  assert.equal(ui.doc.activeElement.dataset.classPath,ui.run('state.selectedPath'));
+  assert.ok(ui.doc.querySelector('.block-row.selected .node-image-preview img'));
+  assert.match(ui.doc.querySelector('#next-step').textContent,/Картинка уже есть/);
+  assert.equal(ui.doc.querySelector('[data-use-hero-image]'),null);
+  const classInput=ui.doc.querySelector('.block-row.selected [data-class-path]');
+  classInput.value='photo hero__img';
+  classInput.dispatchEvent(new ui.win.Event('change',{bubbles:true}));
+  assert.ok(ui.run(`parseHTML().querySelector('header > img.photo.hero__img')`));
+  assert.equal(ui.run(`parseHTML().querySelectorAll('header img').length`),1);
+  assert.equal(ui.run(`lessonChecks()[1].find(item=>item.id==='hero-img').done`),true);
+});
+
+test('left image preview replaces that exact image without opening extra settings',t=>{
+  const ui=editor(t);ui.click('#theory-start');buildCards(ui);
+  const replace=ui.doc.querySelector('.block-row[data-path="0.1.1.1.2"] [data-replace-image]');
+  assert.ok(replace);
+  assert.equal(replace.closest('details'),null,'preview is outside collapsed metadata');
+  replace.click();
+  assert.equal(ui.doc.querySelector('#gallery-dialog').open,true);
+  ui.click('[data-image="cat-window"]');
+  const images=ui.run(`[...parseHTML().querySelectorAll('article img')].map(img=>img.getAttribute('src'))`);
+  assert.deepEqual(Array.from(images),['assets/music.jpg','assets/cat-window.jpg','assets/music.jpg','assets/music.jpg']);
+  assert.equal(ui.doc.querySelector('.block-row.selected .node-image-preview img').getAttribute('src'),'assets/cat-window.jpg');
+});
+
+test('all new library pictures complete task two without creating a QR and persist',t=>{
+  const ui=editor(t);ui.click('#theory-start');finishFirst(ui);finishSecond(ui);ui.run('state.mission=1;updateMissions();');
+  for(const id of ['cat-window','skateboard','ringed-planet']){
+    ui.run(`openGallery();chooseImage(${JSON.stringify(id)});`);
+    assert.equal(ui.percent(),'100%',id);
+    assert.equal(ui.run('photoSession'),null);
+  }
+  ui.run('persistState();');
+  const restored=editor(t,JSON.parse(ui.win.localStorage.getItem('web-workshop-projects-v1')));
+  assert.equal(restored.percent(),'100%');
+});
+
+test('adding a gallery picture leaves the lesson class for the student to enter',t=>{
+  const ui=editor(t);ui.click('#theory-start');finishFirst(ui);
+  ui.run(`selectPath('0.0');openGallery();chooseImage('skateboard');state.mission=1;updateMissions();`);
+  assert.ok(ui.run(`parseHTML().querySelector('header.hero > img.photo')`));
+  assert.equal(ui.run(`parseHTML().querySelector('header.hero > img').classList.contains('hero__img')`),false);
+  assert.equal(ui.run(`lessonChecks()[1].find(item=>item.id==='hero-img').done`),false);
+  assert.equal(ui.run(`lessonChecks()[1].find(item=>item.id==='photo-source').done`),true);
+});
+
+test('image class guidance updates immediately after inline class edits',t=>{
+  const ui=editor(t);ui.click('#theory-start');finishFirst(ui);
+  ui.run(`selectPath('0.0');openGallery();chooseImage('cat-window');`);
+  const input=ui.doc.querySelector('.block-row.selected [data-class-path]');
+  assert.ok(ui.doc.querySelector('.block-row.selected .photo-class-help'));
+  input.focus();input.value='photo hero__img';
+  input.dispatchEvent(new ui.win.Event('change',{bubbles:true}));
+  assert.equal(ui.doc.querySelector('.block-row.selected .photo-class-help'),null);
+  assert.equal(ui.doc.activeElement,input,'inline editing keeps focus');
+  input.value='photo';input.dispatchEvent(new ui.win.Event('change',{bubbles:true}));
+  assert.match(ui.doc.querySelector('.block-row.selected .photo-class-help').textContent,/hero__img/);
+  assert.equal(ui.doc.querySelector('.block-row.selected .node-image-preview img').getAttribute('src'),'assets/cat-window.jpg');
 });

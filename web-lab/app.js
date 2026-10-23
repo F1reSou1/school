@@ -3,6 +3,9 @@ const $ = (selector) => document.querySelector(selector);
 const BOOK_KEY = 'web-workshop-projects-v1';
 const FILE_ORDER = ['index.html', 'style.css', 'script.js'];
 const IMAGES = [
+  {id:'cat-window',title:'Рыжий кот',category:'Природа',file:'assets/cat-window.jpg',alt:'Рыжий кот на солнечном подоконнике среди растений'},
+  {id:'skateboard',title:'Скейтборд',category:'Увлечения',file:'assets/skateboard.jpg',alt:'Скейтборд с цветными колёсами в скейт-парке на закате'},
+  {id:'ringed-planet',title:'Планета с кольцами',category:'Космос',file:'assets/ringed-planet.jpg',alt:'Фантастическая планета с кольцами над фиолетовым пейзажем'},
   {id:'mountains', title:'Горы', category:'Природа', file:'assets/mountains.jpg', alt:'Горные вершины в мягком вечернем свете'},
   {id:'ocean', title:'Океан', category:'Природа', file:'assets/ocean.jpg', alt:'Волны океана'},
   {id:'space', title:'Космос', category:'Космос', file:'assets/space.jpg', alt:'Звёзды и туманность в космосе'},
@@ -242,6 +245,10 @@ function renderEditor() {
   $('#undo-button').disabled = !history.length;
   $('#element-count').textContent = `${parseHTML().body.querySelectorAll('*').length} элементов`;
 }
+function imagePreviewContent(node,path){
+  const heroPhoto=node.parentElement?.matches('header.hero')&&!node.classList.contains('hero__img');
+  return `<button class="node-image-replace" data-replace-image="${path}" aria-label="Заменить картинку ${escapeHTML(node.alt||'без описания')}"><img src="${escapeHTML(node.getAttribute('src')||'')}" alt=""><span>Заменить картинку ↗</span></button>${heroPhoto?`<div class="photo-class-help"><span>Впиши hero__img в поле класса картинки.</span></div>`:''}`;
+}
 function renderTree(properties = true) {
   const doc = parseHTML();
   const contentPanel=$('#content-properties');$('.editor-shell').append(contentPanel);
@@ -251,11 +258,12 @@ function renderTree(properties = true) {
     const editable=(!container||(!node.children.length&&Boolean(node.textContent.trim())))&&!VOID_TAGS.has(tag);
     const textValue=['ul','ol'].includes(tag)?[...node.children].map(li=>li.textContent).join('\n'):node.textContent;
     const className=node.getAttribute('class')||'';
+    const imagePreview=tag==='img'?`<div class="node-image-preview">${imagePreviewContent(node,path)}</div>`:'';
     const textNodes=[...node.childNodes].filter(child=>child.nodeType===3&&child.textContent.trim());
     const itemCount=node.children.length+textNodes.length;
     const children=container?[...node.childNodes].map(child=>child.nodeType===1?row(child,nodePath(child,doc.body),depth+1):child.nodeType===3&&child.textContent.trim()?`<div class="direct-text">${escapeHTML(child.textContent.trim())}</div>`:'').join(''):'';
     const collapsed=container&&(collapsedNodes.has(path)||(!node.children.length&&!expandedEmptyNodes.has(path)));
-    return `<div class="tree-node ${container?'container-node':''} ${itemCount===0?'empty-node':''} ${collapsed?'scope-collapsed':''}" data-node-path="${path}" data-tag="${tag}" style="--level:${depth%4}"><div class="drop-line" data-drop="before" data-path="${path}"></div><div class="block-heading">${container?`<button class="fold-button" data-fold="${path}" aria-expanded="${!collapsed}" aria-label="${collapsed?'Раскрыть':'Свернуть'} ${tag}">${collapsed?'›':'⌄'}</button>`:'<span class="leaf-mark">·</span>'}<div class="block-row ${selected?'selected':''}" draggable="true" data-path="${path}" data-container="${container}" role="group" aria-label="${escapeHTML(tag)}"><button type="button" class="block-select" aria-label="${escapeHTML(tag+': '+summary.slice(0,70))}" aria-pressed="${selected}"><span class="tag-name ${container?'container':''}">&lt;${tag}&gt;</span><span class="node-summary">${escapeHTML(container?summary:tag==='h1'?'Главный заголовок':/^h[2-6]$/.test(tag)?'Заголовок':tag==='p'?'Абзац':summary)}</span></button>${editable?`<textarea class="node-text-input" data-text-path="${path}" ${selected?'id="property-text"':''} rows="1" aria-label="Текст ${tag}" placeholder="Напиши текст">${escapeHTML(textValue)}</textarea>`:''}<input class="node-class-input" data-class-path="${path}" value="${escapeHTML(className)}" placeholder="класс" aria-label="CSS-классы элемента ${tag}" title="Например hero__item. CSS-классы без точки, через пробел. Enter — сохранить, Esc — отменить." autocomplete="off" autocapitalize="off" spellcheck="false">${container?'<span class="scope-inline" aria-hidden="true">{ }</span>':''}<div class="block-row-actions"><button type="button" data-clear-block-classes="${path}" ${className?'':'disabled'}>Снять классы</button><button type="button" data-delete-block="${path}" class="delete-block-button">Удалить блок</button></div></div></div>${container?`<div class="scope-content"><div class="scope-open" data-drop="inside" data-path="${path}" aria-hidden="true">{ </div><div class="scope-body" data-drop="inside" data-path="${path}">${children}<div class="nesting-drop" data-drop="inside" data-path="${path}">+ Вложить в &lt;${tag}&gt;</div></div><div class="scope-close" data-drop="inside" data-path="${path}"><b>}</b><span>&lt;/${tag}&gt;</span></div></div>`:''}<div class="drop-line" data-drop="after" data-path="${path}"></div></div>`;
+    return `<div class="tree-node ${container?'container-node':''} ${itemCount===0?'empty-node':''} ${collapsed?'scope-collapsed':''}" data-node-path="${path}" data-tag="${tag}" style="--level:${depth%4}"><div class="drop-line" data-drop="before" data-path="${path}"></div><div class="block-heading">${container?`<button class="fold-button" data-fold="${path}" aria-expanded="${!collapsed}" aria-label="${collapsed?'Раскрыть':'Свернуть'} ${tag}">${collapsed?'›':'⌄'}</button>`:'<span class="leaf-mark">·</span>'}<div class="block-row ${selected?'selected':''}" draggable="true" data-path="${path}" data-container="${container}" role="group" aria-label="${escapeHTML(tag)}"><button type="button" class="block-select" aria-label="${escapeHTML(tag+': '+summary.slice(0,70))}" aria-pressed="${selected}"><span class="tag-name ${container?'container':''}">&lt;${tag}&gt;</span><span class="node-summary">${escapeHTML(container?summary:tag==='h1'?'Главный заголовок':/^h[2-6]$/.test(tag)?'Заголовок':tag==='p'?'Абзац':summary)}</span></button>${editable?`<textarea class="node-text-input" data-text-path="${path}" ${selected?'id="property-text"':''} rows="1" aria-label="Текст ${tag}" placeholder="Напиши текст">${escapeHTML(textValue)}</textarea>`:''}<input class="node-class-input" data-class-path="${path}" value="${escapeHTML(className)}" placeholder="класс" aria-label="CSS-классы элемента ${tag}" title="Например hero__item. CSS-классы без точки, через пробел. Enter — сохранить, Esc — отменить." autocomplete="off" autocapitalize="off" spellcheck="false">${container?'<span class="scope-inline" aria-hidden="true">{ }</span>':''}${imagePreview}<div class="block-row-actions"><button type="button" data-clear-block-classes="${path}" ${className?'':'disabled'}>Снять классы</button><button type="button" data-delete-block="${path}" class="delete-block-button">Удалить блок</button></div></div></div>${container?`<div class="scope-content"><div class="scope-open" data-drop="inside" data-path="${path}" aria-hidden="true">{ </div><div class="scope-body" data-drop="inside" data-path="${path}">${children}<div class="nesting-drop" data-drop="inside" data-path="${path}">+ Вложить в &lt;${tag}&gt;</div></div><div class="scope-close" data-drop="inside" data-path="${path}"><b>}</b><span>&lt;/${tag}&gt;</span></div></div>`:''}<div class="drop-line" data-drop="after" data-path="${path}"></div></div>`;
   }
   $('#block-tree').innerHTML=[...doc.body.children].filter(node=>node.tagName!=='SCRIPT').map(node=>row(node,nodePath(node,doc.body),0)).join('');
   if(properties)renderProperties(doc);
@@ -318,7 +326,7 @@ function renderProperties(doc=parseHTML()){
   let fields='';
   if(container)fields+=`<label>Тег<select id="semantic-tag">${Object.keys(SEMANTICS).map(t=>`<option value="${t}" ${t===tag?'selected':''}>${t} — ${({main:'главное',header:'вступление',section:'раздел',footer:'завершение',figure:'картинка',div:'нейтральный блок',article:'история',nav:'навигация',aside:'дополнение'})[t]}</option>`).join('')}</select></label>`;
   if(tag==='a')fields+=`<label>Адрес ссылки · href<input id="property-href" value="${escapeHTML(node.getAttribute('href')||'')}"></label>`;
-  if(tag==='img')fields+=`<img class="image-property-thumb" src="${escapeHTML(node.getAttribute('src')||'')}" alt="Текущая картинка"><button id="property-image" class="image-choose-button">Заменить картинку</button><label>Описание · alt (необязательно)<input id="property-alt" value="${escapeHTML(node.getAttribute('alt')||'')}" placeholder="Можно оставить пустым"></label>`;
+  if(tag==='img')fields+=`<label>Описание · alt (необязательно)<input id="property-alt" value="${escapeHTML(node.getAttribute('alt')||'')}" placeholder="Можно оставить пустым"></label>`;
   const imageWidth=tag==='img'?slider('width','Ширина картинки',parseInt(computedBlockStyle(node).width)||420,60,420):'';
   const primaryFields=container?'':fields;fields=container?fields:'';
   fields+=`<label>CSS-классы<div class="class-field-row"><input id="property-class" value="${escapeHTML(node.getAttribute('class')||'')}" list="class-list" placeholder="блок__элемент"><button id="property-new-class" aria-label="Создать CSS-класс" title="Создать общий класс">+</button></div><datalist id="class-list">${findClasses().map(name=>`<option value="${escapeHTML(name)}"></option>`).join('')}</datalist>${validClasses(node).length?`<div class="assigned-classes">${validClasses(node).map(name=>`<span class="assigned-class"><button data-edit-class="${name}">.${name}</button><button class="remove-class-button" data-remove-class="${name}" aria-label="Снять класс ${name} с блока" title="Снять класс с этого блока">Снять</button></span>`).join('')}</div>`:''}</label>`;
@@ -340,7 +348,7 @@ function renderProperties(doc=parseHTML()){
   const wasOpen=panel.dataset.path===state.selectedPath&&Boolean(panel.querySelector('details')?.open);
   panel.dataset.path=state.selectedPath;
   panel.innerHTML=`<details class="content-meta" ${wasOpen?'open':''}><summary>Ещё настройки &lt;${tag}&gt;</summary><div class="node-actions"><button data-node-action="up" aria-label="Переместить элемент выше">↑ Выше</button><button data-node-action="down" aria-label="Переместить элемент ниже">↓ Ниже</button><button data-node-action="duplicate" aria-label="Дублировать элемент">⧉ Копия</button></div><div class="property-fields">${primaryFields}${fields}</div></details>`;
-  if(selectedRow)selectedRow.append(panel);
+  if(selectedRow){selectedRow.append(panel);const preview=selectedRow.querySelector('.node-image-preview');if(preview&&tag==='img')preview.innerHTML=imagePreviewContent(node,state.selectedPath);}
   panel.hidden=!selectedRow;
   const destination=defaultContainer(doc);
   $('#insert-destination').textContent=destination&&destination!==doc.body?'Внутрь <'+destination.tagName.toLowerCase()+'>'+ (destination.className?' .'+destination.className.trim().split(/\s+/).join('.'):''):'В конец страницы';
@@ -407,7 +415,7 @@ function missionAction(stepId,options={}){
   if(next.id==='page-background')focus=$('[data-style="background"]');
   if(next.id==='text-width')focus=$('#max-width-value');
   if(['photo-settings','photo-small'].includes(next.id))focus=$('[data-style="width"]');
-  const needsBlock=!next.done&&(['hero-item','hero-img','interests-article'].includes(next.id)||/^card-/.test(next.id)||(/^(title|description)-/.test(next.id)&&node?.tagName!=='P')||/^picture-/.test(next.id));
+  const needsBlock=!next.done&&(['hero-item','interests-article'].includes(next.id)||(next.id==='hero-img'&&!next.existingImage)||/^card-/.test(next.id)||(/^(title|description)-/.test(next.id)&&node?.tagName!=='P')||/^picture-/.test(next.id));
   if(needsBlock){
     const key=next.id==='hero-item'||/^card-/.test(next.id)?'div':next.id==='interests-article'?'article':/^(title|description)-/.test(next.id)?'p':'img';
     if(options.openGallery!==false){$('#block-library').open=true;focus=$('#library-items [data-block="'+key+'"]');}
@@ -720,7 +728,7 @@ function secondStepDemo(id){
   if(id==='hero-item')scene=editor(`<div class="demo-add-existing">${heading}${intro}</div><div class="demo-added-node">${typedClass(item,'hero__item')}</div><div class="demo-add-drawer"><b>＋ Добавить блок</b><span><code>div</code> Контейнер <strong>＋</strong></span></div>`);
   if(id==='hero-text')scene=editor(`<div class="demo-transfer"><div class="transfer-before">${heading}${intro}${item}</div><div class="transfer-middle">${intro}${item}${scope(heading)}</div><div class="transfer-after">${item}${scope(heading+intro)}</div></div><div class="demo-parent-control"><small>Ещё настройки → Родитель</small><span>div.hero__item ⌄</span></div>`);
   if(id==='hero-img')scene=editor(`${demoTreeRow('div','Блок','hero__item')}<div class="demo-added-node">${image}</div><div class="demo-add-drawer"><b>＋ Добавить блок</b><span><code>img</code> Картинка <strong>＋</strong></span></div>`);
-  if(id==='photo-source')scene=`<div class="demo-gallery"><header>Картинки <span>×</span></header><div class="demo-gallery-toolbar"><small>Все · Природа · Космос</small><b>С телефона по QR</b></div><div class="demo-gallery-pictures"><img src="assets/mountains.jpg" alt=""><img src="assets/music.jpg" alt=""></div><div class="demo-gallery-result"><span>Телефон → QR</span><small>или готовая картинка</small><b>Фото в твоём блоке ✓</b><img class="demo-photo-arrival" src="assets/mountains.jpg" alt=""></div></div>`;
+  if(id==='photo-source')scene=`<div class="demo-gallery"><header>Картинки <span>×</span></header><div class="demo-gallery-toolbar"><small>Все · Природа · Космос</small><b>С телефона по QR</b></div><div class="demo-gallery-pictures"><img src="assets/cat-window.jpg" alt=""><img src="assets/skateboard.jpg" alt=""></div><div class="demo-gallery-result"><span>Телефон → QR</span><small>или готовая картинка</small><b>Фото в твоём блоке ✓</b><img class="demo-photo-arrival" src="assets/cat-window.jpg" alt=""></div></div>`;
   if(['text-width','photo-settings'].includes(id)){
     const isText=id==='text-width',name=isText?'hero__item':'hero__img';
     scene=`<div class="demo-ui-inspector demo-width-inspector"><header>Стиль блока</header><div class="demo-ui-properties"><code>&lt;${isText?'div':'img'}&gt; .${name}</code><h4>Оформление <span>⌄</span></h4><label>Стиль класса<span class="demo-ui-select">.${name} <b>⌄</b></span></label><div class="demo-width-target">${isText?`<label>Макс. ширина блока, px</label><div class="demo-number-field"><b class="demo-changing-value"><span class="demo-value-initial">Без ограничения</span><span class="demo-value-final">360</span></b><span>Сбросить</span></div><small>Блок может быть уже, но не шире этого значения.</small>`:`<label>Ширина картинки <output class="demo-changing-value"><span class="demo-value-initial">420 px</span><span class="demo-value-final">220 px</span></output></label><div class="demo-photo-slider"><i></i></div>`}</div><div class="demo-width-preview ${isText?'text-limit':'photo-limit'}">${isText?'<i></i><i></i><i></i>':'<img src="assets/mountains.jpg" alt="">'}</div></div></div>`;
@@ -872,6 +880,8 @@ document.addEventListener('click',event=>{
   if(event.target.closest('#theory-back'))showTheoryPage(theoryPageIndex-1);
 
   const target=event.target;
+  const replaceImage=target.closest('[data-replace-image]');
+  if(replaceImage){selectPath(replaceImage.dataset.replaceImage,true,{keepTree:true});openGallery();return;}
   if(target.closest('[data-class-path],[data-text-path]'))return;
   const clearClasses=target.closest('[data-clear-block-classes]');
   if(clearClasses){const input=clearClasses.closest('.block-row').querySelector('[data-class-path]');input.value='';commitBlockClass(input);toast('Классы сняты с блока. Их стили доступны другим блокам.');return;}
@@ -923,7 +933,7 @@ $('#block-tree').addEventListener('keydown',event=>{
 });
 
 document.addEventListener('dragstart', (event) => {
-  if(event.target.closest('input,textarea,select,#content-properties')){event.preventDefault();return;}
+  if(event.target.closest('input,textarea,select,#content-properties,.node-image-preview')){event.preventDefault();return;}
   if (pointerDrag) { event.preventDefault(); return; }
   const block = event.target.closest('[data-block]'); const row = event.target.closest('.block-row');
   if (!block && !row) return;
@@ -937,7 +947,7 @@ document.addEventListener('dragend', () => { clearDragHighlights(); dragPayload 
 // Pointer dragging also works in embedded browsers and with touch input.
 document.addEventListener('pointerdown', (event) => {
   if (event.button !== 0) return;
-  if (event.target.closest('input,textarea,select,#content-properties,[data-clear-block-classes],[data-delete-block]')) return;
+  if (event.target.closest('input,textarea,select,#content-properties,.node-image-preview,[data-clear-block-classes],[data-delete-block]')) return;
   const source = event.target.closest('[data-block],.block-row');
   if (!source) return;
   pointerDrag = { source, id: event.pointerId, x: event.clientX, y: event.clientY, active: false, payload: source.dataset.block ? 'new:' + source.dataset.block : 'move:' + source.dataset.path };
