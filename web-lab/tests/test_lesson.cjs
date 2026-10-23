@@ -816,3 +816,13 @@ test('theory demo slots open and reveal on entering the scroll viewport',async t
   await new Promise(resolve=>setTimeout(resolve,280));
   assert.equal(observed[1].querySelector('details').open,false);
 });
+
+test('any nonempty text counts without greeting, name or sentence requirements',t=>{
+  const ui=editor(t);ui.click('#theory-start');
+  for(const value of ['Я','42','🚀','Музыка','Саша']){
+    ui.run(`mutateHTML(doc=>{doc.querySelector('h1').textContent=${JSON.stringify(value)};doc.querySelector('p.hero__intro').textContent=${JSON.stringify(value)};});`);
+    assert.equal(ui.percent(),'50%',value+' must complete both text steps');
+  }
+  ui.run(`mutateHTML(doc=>{doc.querySelector('h1').textContent='   ';doc.querySelector('p.hero__intro').textContent='\\n';});`);
+  assert.equal(ui.percent(),'0%','whitespace alone does not count');
+});

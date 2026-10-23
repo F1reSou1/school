@@ -672,7 +672,7 @@ function updateMissions(){
   const clusters=new Map();
   for(const item of groups[state.mission]){const title=stepCluster(item.id,state.mission);if(!clusters.has(title))clusters.set(title,[]);clusters.get(title).push(item);}
   if(state.mission===0){
-    const labels={'page-select':'Выбрать блок','page-background':'Задать фон',name:'Вписать имя',intro:'Рассказать о себе'};
+    const labels={'page-select':'Выбрать блок','page-background':'Задать фон',name:'Изменить заголовок',intro:'Изменить абзац'};
     const items=groups[0];
     $('#task-checklist').innerHTML=`<ol class="step-strip">${items.map((item,i)=>`<li class="${item.done?'done':''} ${item===current.next?'current':''}"><button data-task-step="${item.id}" aria-current="${item===current.next?'step':'false'}"><span aria-hidden="true">${item.done?'✓':i+1}</span>${labels[item.id]}</button></li>`).join('')}</ol><div class="step-guidance-list">${items.map((item,i)=>`<section class="step-guidance" ${item===current.next?'':'hidden'}><div class="step-instruction"><small>Сейчас · шаг ${i+1} из 4</small><h3>${labels[item.id]}</h3><p>${escapeHTML(item.label)}</p><button class="button secondary" data-task-step="${item.id}">Показать где →</button></div><details class="micro-demo" open><summary>Пример действия <span aria-hidden="true">⌄</span></summary>${stepDemo(item.id)}</details></section>`).join('')}</div>`;
   }else{
@@ -704,8 +704,8 @@ function stepDemo(id){
   const demos={
     'page-select':{title:'Выбрать блок',detail:'Нажми строку main — Страница в левом меню. Блок выделится, а его настройки появятся справа.'},
     'page-background':{title:'Поменять фон',detail:'В правом меню выбери стиль .page. Ниже найди «Фон» рядом с «Текст» и нажми цветной квадрат.'},
-    name:{title:'Вписать своё имя',detail:'В левом меню найди h1 — Главный заголовок. В поле под этой строкой замени текст на своё имя.'},
-    intro:{title:'Рассказать о себе',detail:'В том же левом меню найди p — Абзац. Под строкой с классом hero__intro напиши пару слов о себе.'}
+    name:{title:'Изменить заголовок',detail:'В левом меню найди h1 — Главный заголовок. Под этой строкой впиши любой свой текст. Приветствие необязательно.'},
+    intro:{title:'Изменить абзац',detail:'В левом меню найди p — Абзац. Под строкой с классом hero__intro напиши любой непустой текст.'}
   },d=demos[id];if(!d)return '';
   const text=id==='name'?'Привет, я Саша':'Люблю музыку и прогулки.';
   const tree=`<div class="demo-ui-editor"><div class="demo-ui-toolbar"><b>Блоки</b><span>HTML</span><span>CSS</span><span class="demo-ui-undo">↶</span></div><div class="demo-ui-tree">${demoTreeRow('main','Страница','page','',id==='page-select')}<div class="demo-ui-scope"><b>{</b>${demoTreeRow('header','Знакомство','hero')}<div class="demo-ui-scope inner"><b>{</b>${id!=='intro'?demoTreeRow('h1','Главный заголовок','',id==='name'?text:'',id==='name'):''}${id!=='name'?demoTreeRow('p','Абзац','hero__intro',id==='intro'?text:'',id==='intro'):''}<b>} <small>&lt;/header&gt;</small></b></div><b>} <small>&lt;/main&gt;</small></b></div></div></div>`;
