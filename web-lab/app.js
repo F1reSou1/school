@@ -711,20 +711,29 @@ function secondStepDemo(id){
     'photo-settings':['Уменьши картинку','Выбери сам img.hero__img. Справа уменьши «Ширина картинки» до 240 px.']
   },[title,detail]=descriptions[id];
   const heading=demoTreeRow('h1','Главный заголовок',''),intro=demoTreeRow('p','Абзац','hero__intro');
+  const typedClass=(markup,name,initial='класс')=>markup.replace('>'+name+'</span>','><span class="demo-class-initial">'+initial+'</span><span class="demo-class-typed">'+name+'</span></span>');
   const item=demoTreeRow('div','Блок','hero__item','',true);
-  const image=`<div class="demo-new-image">${demoTreeRow('img','Картинка','hero__img','',true)}<img src="assets/mountains.jpg" alt=""></div>`;
+  const image=`<div class="demo-new-image">${typedClass(demoTreeRow('img','Картинка','hero__img','',true),'hero__img','photo')}<img src="assets/mountains.jpg" alt=""></div>`;
   const scope=content=>`<div class="demo-ui-scope inner"><b>{</b>${content}<b>} <small>&lt;/div&gt;</small></b></div>`;
   const editor=content=>`<div class="demo-ui-editor"><div class="demo-ui-toolbar"><b>Блоки</b><span>HTML</span><span>CSS</span><span class="demo-ui-undo">↶</span></div><div class="demo-ui-tree">${demoTreeRow('header','Знакомство','hero','',true)}<div class="demo-ui-scope inner"><b>{</b>${content}<b>} <small>&lt;/header&gt;</small></b></div></div></div>`;
   let scene='';
-  if(id==='hero-item')scene=editor(`<div class="demo-add-existing">${heading}${intro}</div><div class="demo-added-node">${item}</div><div class="demo-add-drawer"><b>＋ Добавить блок</b><span><code>div</code> Контейнер <strong>＋</strong></span></div>`);
-  if(id==='hero-text')scene=editor(`<div class="demo-transfer"><div class="transfer-before">${heading}${intro}${item}</div><div class="transfer-after">${item}${scope(heading+intro)}</div></div><div class="demo-parent-control"><small>Ещё настройки → Родитель</small><span>div.hero__item ⌄</span></div>`);
+  if(id==='hero-item')scene=editor(`<div class="demo-add-existing">${heading}${intro}</div><div class="demo-added-node">${typedClass(item,'hero__item')}</div><div class="demo-add-drawer"><b>＋ Добавить блок</b><span><code>div</code> Контейнер <strong>＋</strong></span></div>`);
+  if(id==='hero-text')scene=editor(`<div class="demo-transfer"><div class="transfer-before">${heading}${intro}${item}</div><div class="transfer-middle">${intro}${item}${scope(heading)}</div><div class="transfer-after">${item}${scope(heading+intro)}</div></div><div class="demo-parent-control"><small>Ещё настройки → Родитель</small><span>div.hero__item ⌄</span></div>`);
   if(id==='hero-img')scene=editor(`${demoTreeRow('div','Блок','hero__item')}<div class="demo-added-node">${image}</div><div class="demo-add-drawer"><b>＋ Добавить блок</b><span><code>img</code> Картинка <strong>＋</strong></span></div>`);
-  if(id==='photo-source')scene=`<div class="demo-gallery"><header>Картинки <span>×</span></header><div class="demo-gallery-toolbar"><small>Все · Природа · Космос</small><b>С телефона по QR</b></div><div class="demo-gallery-pictures"><img src="assets/mountains.jpg" alt=""><img src="assets/music.jpg" alt=""></div><div class="demo-gallery-result"><span>Телефон → QR</span><small>или готовая картинка</small><b>Фото в твоём блоке ✓</b></div></div>`;
+  if(id==='photo-source')scene=`<div class="demo-gallery"><header>Картинки <span>×</span></header><div class="demo-gallery-toolbar"><small>Все · Природа · Космос</small><b>С телефона по QR</b></div><div class="demo-gallery-pictures"><img src="assets/mountains.jpg" alt=""><img src="assets/music.jpg" alt=""></div><div class="demo-gallery-result"><span>Телефон → QR</span><small>или готовая картинка</small><b>Фото в твоём блоке ✓</b><img class="demo-photo-arrival" src="assets/mountains.jpg" alt=""></div></div>`;
   if(['text-width','photo-settings'].includes(id)){
     const isText=id==='text-width',name=isText?'hero__item':'hero__img';
-    scene=`<div class="demo-ui-inspector demo-width-inspector"><header>Стиль блока</header><div class="demo-ui-properties"><code>&lt;${isText?'div':'img'}&gt; .${name}</code><h4>Оформление <span>⌄</span></h4><label>Стиль класса<span class="demo-ui-select">.${name} <b>⌄</b></span></label><div class="demo-width-target">${isText?`<label>Макс. ширина блока, px</label><div class="demo-number-field"><b>360</b><span>Сбросить</span></div><small>Блок может быть уже, но не шире этого значения.</small>`:`<label>Ширина картинки <output>220 px</output></label><div class="demo-photo-slider"><i></i></div>`}</div><div class="demo-width-preview ${isText?'text-limit':'photo-limit'}">${isText?'<i></i><i></i><i></i>':'<img src="assets/mountains.jpg" alt="">'}</div></div></div>`;
+    scene=`<div class="demo-ui-inspector demo-width-inspector"><header>Стиль блока</header><div class="demo-ui-properties"><code>&lt;${isText?'div':'img'}&gt; .${name}</code><h4>Оформление <span>⌄</span></h4><label>Стиль класса<span class="demo-ui-select">.${name} <b>⌄</b></span></label><div class="demo-width-target">${isText?`<label>Макс. ширина блока, px</label><div class="demo-number-field"><b class="demo-changing-value"><span class="demo-value-initial">Без ограничения</span><span class="demo-value-final">360</span></b><span>Сбросить</span></div><small>Блок может быть уже, но не шире этого значения.</small>`:`<label>Ширина картинки <output class="demo-changing-value"><span class="demo-value-initial">420 px</span><span class="demo-value-final">220 px</span></output></label><div class="demo-photo-slider"><i></i></div>`}</div><div class="demo-width-preview ${isText?'text-limit':'photo-limit'}">${isText?'<i></i><i></i><i></i>':'<img src="assets/mountains.jpg" alt="">'}</div></div></div>`;
   }
-  return `<figure class="action-demo second-demo demo-${id}" aria-label="Пример: ${title}"><div class="demo-scene" aria-hidden="true">${scene}<span class="demo-cursor">➤</span></div><figcaption><b>${title}</b><span>${detail}</span></figcaption></figure>`;
+  const phases={
+    'hero-item':['1. Добавляем контейнер div','2. Вписываем класс hero__item','3. Блок создан внутри hero'],
+    'hero-text':['1. Выбираем заголовок h1','2. Вкладываем h1, затем p','3. Оба элемента внутри hero__item'],
+    'hero-img':['1. Добавляем картинку img','2. Вписываем класс hero__img','3. Картинка рядом с блоком текста'],
+    'photo-source':['1. Выбираем фото по QR или из библиотеки','2. Нажимаем на готовую картинку','3. Фото появляется в нашем блоке'],
+    'text-width':['1. Выбираем hero__item','2. Вводим максимум 360 px','3. Текстовый блок становится уже'],
+    'photo-settings':['1. Выбираем img.hero__img','2. Уменьшаем ширину до 220 px','3. Картинка становится меньше']
+  }[id];
+  return `<figure class="action-demo second-demo demo-${id}" aria-label="Пример: ${title}"><div class="demo-action-phases" aria-hidden="true">${phases.map((text,i)=>`<span class="demo-phase phase-${i+1}">${text}</span>`).join('')}</div><div class="demo-scene" aria-hidden="true">${scene}<span class="demo-cursor">➤</span></div><figcaption><b>${title}</b><span>${detail}</span></figcaption></figure>`;
 }
 function theoryVisual(index,title){
   const content={
