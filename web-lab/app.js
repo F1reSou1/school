@@ -646,15 +646,28 @@ function lessonChecks(doc=parseHTML()){
   return WorkshopLesson.checks(doc,(node,name)=>name?classStyle(name):computedBlockStyle(node),state,IMAGES.flatMap(image=>[image.file,new URL(image.file,location.href).href]));
 }
 function completion(){return lessonChecks().map(items=>WorkshopLesson.progress(items).complete);}
-function stepCluster(id,mission){
-  if(mission===0)return id.startsWith('page-')?'01 / Фон страницы':'02 / Знакомство';
-  if(mission===1)return ['hero-item','hero-text'].includes(id)?'01 / Объедини текст':['hero-img','photo-source'].includes(id)?'02 / Добавь картинку':'03 / Настрой ширину';
-  if(['hero-row','photo-small'].includes(id))return '01 / Текст и фото рядом';
-  if(id==='interests-article')return '02 / Подборка интересов';
-  const card=id.match(/^(?:card|title|description)-(\d)$/);if(card)return '03 / Карточка '+(Number(card[1])+1);
-  return id.startsWith('picture-')?'04 / Две картинки':'05 / Общий стиль и отступы';
+const DEMO_STEPS=[['page-select','page-background','name','intro'],['hero-item','hero-text','hero-img','photo-source','text-width','photo-settings'],['hero-row','hero-gap','interests-article','cards-create','card-content','shared-cards','interests-padding','cards-padding','cards-wrap']];
+const THIRD_PHASES=[
+  {title:'Вступление',match:id=>['hero-row','photo-small'].includes(id)},
+  {title:'Подборка',match:id=>id==='interests-article'},
+  {title:'4 карточки',match:id=>/^(card|title|description)-/.test(id)},
+  {title:'2 картинки',match:id=>id.startsWith('picture-')},
+  {title:'Общий стиль',match:id=>['shared-cards','interesting__title','interesting__description'].includes(id)},
+  {title:'Отступы',match:id=>id.endsWith('-padding')}
+];
+function thirdStepTitle(id){
+  const card=id.match(/^(card|title|description)-(\d)$/);
+  if(card)return `Карточка ${Number(card[2])+1} · ${{card:'создать блок',title:'название',description:'описание'}[card[1]]}`;
+  return {'hero-row':'Текст и фото в ряд','photo-small':'Размер фото','interests-article':'Подборка интересов','picture-1':'Первая картинка','picture-2':'Вторая картинка','shared-cards':'Один стиль для карточек','interesting__title':'Стиль названий','interesting__description':'Стиль описаний','interests-padding':'Воздух внутри подборки','cards-padding':'Воздух внутри карточек'}[id];
 }
-const DEMO_STEPS=[['page-select','page-background','name','intro'],['hero-item','hero-text','hero-img','photo-source','text-width','photo-settings']];
+function thirdChecklist(items,current){
+  const phases=THIRD_PHASES.map(phase=>({...phase,items:items.filter(item=>phase.match(item.id))}));
+  const active=phases.find(phase=>phase.items.includes(current.next));
+  const strip=phases.map((phase,i)=>{const done=phase.items.filter(item=>item.done).length,next=phase.items.find(item=>!item.done)||phase.items[0];return `<li class="${done===phase.items.length?'done':''} ${phase===active?'current':''}"><button data-task-step="${next.id}" aria-current="${phase===active?'step':'false'}"><span aria-hidden="true">${done===phase.items.length?'✓':i+1}</span><b>${phase.title}<small>${done} / ${phase.items.length}</small></b></button></li>`;}).join('');
+  const cards=active===phases[2]?`<div class="card-step-overview" aria-label="Готовность карточек">${[0,1,2,3].map(i=>{const checks=items.filter(item=>['card-'+i,'title-'+i,'description-'+i].includes(item.id)),done=checks.filter(item=>item.done).length,next=checks.find(item=>!item.done)||checks[0];return `<button data-task-step="${next.id}" class="${done===3?'done':''} ${checks.includes(current.next)?'current':''}">Карточка ${i+1}<span>${done===3?'✓':done+' / 3'}</span></button>`;}).join('')}</div>`:'';
+  const guide=current.next?`<section class="step-guidance third-step-guidance"><div class="step-instruction"><small>${active.title} · действие ${items.indexOf(current.next)+1} из ${items.length}</small><h3>${thirdStepTitle(current.next.id)}</h3><p>${escapeHTML(current.next.label)}</p><button class="button secondary" data-task-step="${current.next.id}">Показать где →</button>${active===phases[2]?'<p class="duplication-tip">Можно собрать первую карточку и сделать три копии: «Ещё настройки → ⧉ Копия». Затем замени текст.</p>':''}</div><div class="micro-demo"><span class="demo-section-label">Пример действия</span>${thirdStepDemo(current.next.id)}</div></section>`:'<div class="third-finish"><span>✓</span><div><h3>Страница готова!</h3><p>Текст, фотографии и четыре интереса — всё на своих местах. Сохрани результат.</p></div></div>';
+  return `<ol class="step-strip six-steps third-phase-strip">${strip}</ol>${cards}${guide}`;
+}
 function updateMissions(){
   const groups=lessonChecks(),progress=groups.map(WorkshopLesson.progress),current=progress[state.mission],mission=MISSIONS[state.mission];
   $('#progress-count').textContent=`${progress.filter(item=>item.complete).length} / ${MISSIONS.length}`;
@@ -678,15 +691,11 @@ function updateMissions(){
   $('#task-success').textContent=current.complete?'Поздравляем, 100%! '+status:'';
   $('#mission-action-button').hidden=current.complete;
   $('#check-button').textContent=current.complete?(earlierIncomplete>=0?`К задаче ${earlierIncomplete+1}`:state.mission<MISSIONS.length-1?'Следующая задача →':'Сохранить страницу'):'Проверить';
-  const clusters=new Map();
-  for(const item of groups[state.mission]){const title=stepCluster(item.id,state.mission);if(!clusters.has(title))clusters.set(title,[]);clusters.get(title).push(item);}
   if(state.mission<2){
     const labels={'page-select':'Выбрать блок','page-background':'Задать фон',name:'Изменить заголовок',intro:'Изменить абзац','hero-item':'Блок с текстом','hero-text':'Вложить текст','hero-img':'Блок картинки','photo-source':'Выбрать фото','text-width':'Ширина текста','photo-settings':'Ширина фото'};
     const items=groups[state.mission];
     $('#task-checklist').innerHTML=`<ol class="step-strip ${items.length===6?'six-steps':''}">${items.map((item,i)=>`<li class="${item.done?'done':''} ${item===current.next?'current':''}"><button data-task-step="${item.id}" aria-current="${item===current.next?'step':'false'}"><span aria-hidden="true">${item.done?'✓':i+1}</span>${labels[item.id]}</button></li>`).join('')}</ol><div class="step-guidance-list">${items.map((item,i)=>`<section class="step-guidance" ${item===current.next?'':'hidden'}><div class="step-instruction"><small>Сейчас · шаг ${i+1} из ${items.length}</small><h3>${labels[item.id]}</h3><p>${escapeHTML(item.label)}</p><button class="button secondary" data-task-step="${item.id}">Показать где →</button></div><details class="micro-demo" open><summary>Пример действия <span aria-hidden="true">⌄</span></summary>${stepDemo(item.id)}</details></section>`).join('')}</div>`;
-  }else{
-  $('#task-checklist').innerHTML=[...clusters].map(([title,items])=>`<section class="step-cluster"><h3>${title}<small>${items.filter(item=>item.done).length}/${items.length}</small></h3><ol>${items.map(item=>`<li class="${item.done?'done':''} ${item===current.next?'current':''}"><button data-task-step="${item.id}"><span aria-hidden="true">${item.done?'✓':item===current.next?'→':'○'}</span>${escapeHTML(item.label)}</button>${state.mission===0?`<details class="micro-demo" ${item===current.next?'open':''}><summary>Как это сделать <span aria-hidden="true">▶</span></summary>${stepDemo(item.id)}</details>`:''}</li>`).join('')}</ol></section>`).join('');
-  }
+  }else $('#task-checklist').innerHTML=thirdChecklist(groups[2],current);
   if(!$('#hint-box').hidden)$('#hint-box').textContent=mission.hint;
   const key=library.activeId+':'+state.mission,previous=taskPercentages.get(key);
   taskPercentages.set(key,current.percent);
@@ -698,6 +707,7 @@ function demoTreeRow(tag,label,className,content='',target=false){
 }
 function stepDemo(id){
   if(DEMO_STEPS[1].includes(id))return secondStepDemo(id);
+  if(thirdStepTitle(id)||DEMO_STEPS[2].includes(id))return thirdStepDemo(id);
   const demos={
     'page-select':{title:'Выбрать блок',detail:'Нажми строку main — Страница в левом меню. Блок выделится, а его настройки появятся справа.'},
     'page-background':{title:'Поменять фон',detail:'В правом меню выбери стиль .page. Ниже найди «Фон» рядом с «Текст» и нажми цветной квадрат.'},
@@ -743,6 +753,60 @@ function secondStepDemo(id){
   }[id];
   return `<figure class="action-demo second-demo demo-${id}" aria-label="Пример: ${title}"><div class="demo-action-phases" aria-hidden="true">${phases.map((text,i)=>`<span class="demo-phase phase-${i+1}">${text}</span>`).join('')}</div><div class="demo-scene" aria-hidden="true">${scene}<span class="demo-cursor">➤</span></div><figcaption><b>${title}</b><span>${detail}</span></figcaption></figure>`;
 }
+function thirdStepDemo(id){
+  if(id==='photo-small')return secondStepDemo('photo-settings');
+  const match=id.match(/^(card|title|description)-(\d)$/),cardNumber=match?Number(match[2])+1:1;
+  const kind=match?match[1]:id.startsWith('picture-')?'picture':id;
+  const titles={'hero-row':'Поставь текст и фото рядом','hero-gap':'Оставь расстояние между ними','interests-article':'Создай подборку интересов',card:`Создай карточку ${cardNumber}`,title:`Добавь название в карточку ${cardNumber}`,description:`Добавь описание в карточку ${cardNumber}`,'cards-create':'Собери четыре карточки','card-content':'Заполни карточку','picture':'Выбери картинку для карточки','shared-cards':'Оформи все карточки одним классом','interesting__title':'Оформи все названия','interesting__description':'Оформи все описания','interests-padding':'Добавь отступ внутри подборки','cards-padding':'Добавь отступ внутри карточек','cards-wrap':'Карточки в ряд с переносом'};
+  const title=titles[kind];if(!title)return '';
+  const typed=(tag,label,name)=>demoTreeRow(tag,label,name,'',true).replace('>'+name+'</span>','><span class="demo-class-initial">класс</span><span class="demo-class-typed">'+name+'</span></span>');
+  const scope=(tag,content)=>`<div class="demo-ui-scope inner"><b>{</b>${content}<b>} <small>&lt;/${tag}&gt;</small></b></div>`;
+  const editor=content=>`<div class="demo-ui-editor"><div class="demo-ui-toolbar"><b>Блоки</b><span>HTML</span><span>CSS</span><span class="demo-ui-undo">↶</span></div><div class="demo-ui-tree">${content}</div></div>`;
+  const drawer=(tag,label)=>`<div class="demo-add-drawer"><b>＋ Добавить блок</b><span><code>${tag}</code> ${label}<strong>＋</strong></span></div>`;
+  const inspector=(name,content,section='Оформление')=>`<div class="demo-ui-inspector"><header>Стиль блока</header><div class="demo-ui-properties"><label>Стиль класса<span class="demo-ui-select">.${name} <b>⌄</b></span></label><h4>${section} <span>⌄</span></h4>${content}</div></div>`;
+  const changing=(before,after)=>`<output class="demo-changing-value"><span class="demo-value-initial">${before}</span><span class="demo-value-final">${after}</span></output>`;
+  const range=(label,before,after)=>`<div class="third-control-target"><label>${label}${changing(before,after)}</label><div class="demo-photo-slider"><i></i></div></div>`;
+  const miniCards=(extra='')=>`<div class="third-result-cards ${extra}">${['Музыка','Космос','Спорт','Природа'].map((text,i)=>`<div style="--card-index:${i}"><b>${text}</b><span>Моё увлечение</span></div>`).join('')}</div>`;
+  let scene='',phases=[],detail='';
+  if(['hero-row','hero-gap','cards-wrap'].includes(kind)){
+    const wrap=kind==='cards-wrap',gap=kind==='hero-gap',name=wrap?'interesting':'hero';
+    scene=inspector(name,`<div class="third-flex-switch"><span class="third-checkbox">✓</span> Включить Flexbox</div><div class="third-direction"><b>↔ В ряд</b><span>↕ Колонка</span></div>${kind==='hero-row'?'':range('Расстояние','0 px',gap?'24 px':'16 px')}${wrap?'<div class="third-flex-switch"><span class="third-checkbox">✓</span> Разрешить перенос · wrap</div>':''}<div class="third-flex-result ${wrap?'with-wrap':''}">${wrap?miniCards():`<div class="third-text-tile"><b>Твоё имя</b><span>Пара слов о себе</span></div><img src="assets/cat-window.jpg" alt="">`}</div>`,'Расположение · Flexbox');
+    phases=wrap?['1. Выбираем article.interesting','2. Включаем Flexbox и «В ряд»','3. Оставляем wrap: карточки переносятся']:['1. Выбираем header.hero','2. Включаем Flexbox → «В ряд»','3. Задаём расстояние между текстом и фото'];
+    detail=wrap?'Это необязательный шаг. Включи Flexbox у article.interesting, выбери «В ряд» и «Разрешить перенос · wrap».':'Flexbox включается у родителя header.hero. Выбери «В ряд»; расстояние между детьми меняется ползунком «Расстояние».';
+  }else if(['interests-article','card'].includes(kind)){
+    const article=kind==='interests-article',tag=article?'article':'div',name=article?'interesting':'interesting__card';
+    scene=editor(`${demoTreeRow(article?'section':'article',article?'Раздел':'Карточка',article?'interests':'interesting')}${scope(article?'section':'article',`${article?demoTreeRow('h2','Мои интересы',''):''}<div class="demo-added-node">${typed(tag,article?'Карточка':'Блок',name)}</div>${drawer(tag,article?'Подборка':'Контейнер')}`)}`);
+    phases=article?['1. Выбираем section.interests','2. Добавляем article','3. Вписываем класс interesting']:[`1. Выбираем article.interesting`,`2. Добавляем div — карточку ${cardNumber}`,'3. Вписываем общий класс interesting__card'];
+    detail=article?'В левом дереве выбери раздел «Мои интересы». Добавь article и впиши interesting в поле класса.':'Внутри article.interesting добавь div. У всех четырёх карточек используй один класс interesting__card.';
+  }else if(['title','description','card-content'].includes(kind)){
+    const description=kind==='description',name=description?'interesting__description':'interesting__title',text=description?'Играю на гитаре и слушаю новые альбомы.':'Музыка';
+    const paragraph=(className,value)=>typed('p','Абзац',className).replace('</div></div>',`</div><div class="demo-ui-text"><span class="demo-before">Напиши текст</span><span class="demo-after">${value}</span></div></div>`);
+    scene=editor(`${demoTreeRow('div','Блок','interesting__card')}${scope('div',paragraph(name,text)+(kind==='card-content'?paragraph('interesting__description','Играю на гитаре.'):'')+drawer('p','Абзац'))}`);
+    phases=[`1. Выбираем карточку ${cardNumber}`,'2. Добавляем абзац p',`3. Вписываем ${name} и свой текст`];
+    detail='Каждый абзац — отдельный p. Названию дай класс interesting__title, описанию — interesting__description. Текст редактируется под строкой тега.';
+  }else if(kind==='cards-create'){
+    scene=editor(`${demoTreeRow('article','Карточка','interesting')}${scope('article',`${demoTreeRow('div','Блок','interesting__card','',true)}<div class="third-duplicate-action">Ещё настройки &lt;div&gt;<b>⧉ Копия</b></div><div class="third-duplicate-results">${[2,3,4].map(i=>`<div style="--card-index:${i-2}">${demoTreeRow('div','Блок '+i,'interesting__card')}</div>`).join('')}</div>`)}`);
+    phases=['1. Собираем первую карточку','2. «Ещё настройки → ⧉ Копия» три раза','3. Четыре div с одним общим классом'];
+    detail='Сначала собери одну карточку с двумя абзацами. Выбери её div и нажми «⧉ Копия» три раза. В копиях замени текст.';
+  }else if(kind==='picture'){
+    const second=id==='picture-2';
+    scene=editor(`${demoTreeRow('div',second?'Другая карточка':'Карточка','interesting__card')}${scope('div',`${demoTreeRow('p','Абзац','interesting__title')}<div class="demo-add-drawer"><b>＋ Добавить блок</b><span><code>img</code> Картинка<strong>＋</strong></span></div><div class="third-image-choice"><img src="assets/cat-window.jpg" alt=""><img src="assets/skateboard.jpg" alt=""></div><img class="demo-photo-arrival" src="assets/skateboard.jpg" alt="">`)}`);
+    phases=[second?'1. Выбираем другую карточку':'1. Выбираем любую карточку','2. «Добавить блок → Картинка»','3. Выбираем из библиотеки или по QR'];
+    detail='Картинки нужны минимум в двух разных карточках. Выбери div нужной карточки, добавь img и выбери фото. В остальных двух фото необязательны.';
+  }else if(['shared-cards','interesting__title','interesting__description'].includes(kind)){
+    const cards=kind==='shared-cards',name=cards?'interesting__card':kind;
+    scene=inspector(name,`${cards?'<div class="demo-ui-background"><label>Фон</label><span class="demo-ui-color"><i></i><span>#e4eddb</span></span></div>':range('Размер текста','16 px',kind==='interesting__title'?'20 px':'14 px')}${miniCards(cards?'shared-background':kind==='interesting__title'?'shared-title':'shared-description')}<p class="third-result-note">Одно правило → все четыре карточки</p>`);
+    phases=['1. Выбираем элемент первой карточки',`2. «Стиль класса → .${name}»`,'3. Меняем оформление — обновляются все'];
+    detail=cards?'Назначь всем четырём div общий класс interesting__card. Справа выбери этот класс и поменяй фон, цвет или размер.':'Выбери нужный p и его общий класс в «Стиль класса». Меняй оформление класса, чтобы все названия или описания выглядели одинаково.';
+  }else if(['interests-padding','cards-padding'].includes(kind)){
+    const cards=kind==='cards-padding',name=cards?'interesting__card':'interesting';
+    scene=inspector(name,`<label class="third-padding-label">Внутренние отступы · padding, px</label>${range('Все стороны','0 px','16 px')}<div class="third-padding-result"><span class="third-padding-marker">padding 16 px</span><div>${cards?'<b>Музыка</b><span>Слушаю и играю</span>':miniCards()}</div></div>`,'Отступы и углы');
+    phases=[cards?'1. Выбираем общий класс карточек':'1. Выбираем article.interesting','2. «Отступы и углы → Все стороны»','3. Задаём 16 px: внутри появляется воздух'];
+    detail=cards?'У одной карточки выбери класс interesting__card. В «Отступы и углы» увеличь «Все стороны»: padding появится у всех четырёх.':'Выбери article.interesting. Справа открой «Отступы и углы» и увеличь «Все стороны», например до 16 px.';
+  }
+  return `<figure class="action-demo third-demo demo-${id}" aria-label="Пример: ${title}"><div class="demo-action-phases" aria-hidden="true">${phases.map((text,i)=>`<span class="demo-phase phase-${i+1}">${text}</span>`).join('')}</div><div class="demo-scene" aria-hidden="true">${scene}<span class="demo-cursor">➤</span></div><figcaption><b>${title}</b><span>${detail}</span></figcaption></figure>`;
+}
+
 function theoryVisual(index,title){
   const content={
     'HTML — содержимое и структура':`<div class="concept-columns"><div><small>Пишем HTML</small><code>&lt;h1&gt;<b>Привет, я Саша</b>&lt;/h1&gt;</code><code>&lt;p&gt;Люблю музыку.&lt;/p&gt;</code></div><span class="concept-arrow">→</span><div class="concept-page"><small>Браузер показывает</small><strong>Привет, я Саша</strong><p>Люблю музыку.</p></div></div><div class="concept-key"><span>&lt;h1&gt; — открыть</span><span>Текст — содержимое</span><span>&lt;/h1&gt; — закрыть</span></div>`,
@@ -758,7 +822,7 @@ function theoryVisual(index,title){
     'Фото по QR или из библиотеки':`<div class="concept-columns"><div><small>Свой снимок</small><strong>Телефон → QR → фото</strong></div><div><small>Готовое изображение</small><strong>Библиотека → картинка</strong></div></div><p class="concept-caption">Оба способа засчитываются. Выбранная картинка попадёт в твой блок img.</p>`,
     'Flexbox работает у родителя':`<div class="flex-concept"><code>.hero { display: flex; }</code><div class="concept-flex-row"><span>hero__item<br>Текст</span><span>hero__img<br>Фото</span></div></div><p class="concept-caption">Flexbox включаем у hero. В ряд становятся его непосредственные дети.</p>`,
     'Две оси и расстояние':`<div class="axis-concept"><b>justify-content → вдоль ряда</b><div><strong>align-items ↕</strong><div class="concept-flex-row">${cards}</div></div><small>gap — расстояние между соседями</small></div><p class="concept-caption">Здесь направление row. При column главная ось становится вертикальной.</p>`,
-    'Общий класс — одинаковое оформление':`<div class="flex-concept"><code>.interesting__card { background: #e4eddb; padding: 16px; }</code><div class="concept-flex-row shared-cards">${cards}</div></div><p class="concept-caption">У всех трёх карточек один класс interesting__card. Меняем одно правило — меняются все карточки.</p>`,
+    'Общий класс — одинаковое оформление':`<div class="flex-concept"><code>.interesting__card { background: #e4eddb; padding: 16px; }</code><div class="concept-flex-row shared-cards">${cards}<span>Карточка 4</span></div></div><p class="concept-caption">У всех четырёх карточек один класс interesting__card. Меняем одно правило — меняются все карточки.</p>`,
     'Отступы внутри и между блоками':`<div class="padding-concept"><span>padding — воздух внутри рамки</span><div class="concept-flex-row"><span>Содержимое</span><b>↔ gap ↔</b><span>Содержимое</span></div></div><p class="concept-caption">padding отделяет содержимое от края блока. gap отделяет соседние элементы друг от друга.</p>`,
     'Как поставить карточки в ряд':`<div class="flex-concept"><code>display: flex; flex-direction: row; flex-wrap: wrap;</code><div class="concept-flex-row wrap-concept">${cards}<span>Карточка 4</span></div></div><p class="concept-caption">С wrap карточка переходит на следующую строку, когда ей не хватает ширины.</p>`
   });
@@ -941,7 +1005,7 @@ document.addEventListener('dragstart', (event) => {
   event.dataTransfer.setData('text/plain', dragPayload); event.dataTransfer.effectAllowed = block ? 'copy' : 'move';
   if (row) row.classList.add('dragging');
 });
-document.addEventListener('dragover', (event) => { if (!dragPayload && !event.dataTransfer?.types.includes('text/plain')) return; const drop = getDropTarget(event); if (!drop) return; event.preventDefault(); highlightDrop(drop); event.dataTransfer.dropEffect = dragPayload?.startsWith('new:') ? 'copy' : 'move'; });
+document.addEventListener('dragover', (event) => { if (!dragPayload && !event.dataTransfer?.types.includes('text/plain')) return; scrollBuilderDuringDrag(event.clientX,event.clientY); const drop = getDropTarget(event); if (!drop) return; event.preventDefault(); highlightDrop(drop); event.dataTransfer.dropEffect = dragPayload?.startsWith('new:') ? 'copy' : 'move'; });
 document.addEventListener('drop', handleDrop);
 document.addEventListener('dragend', () => { clearDragHighlights(); dragPayload = null; });
 // Pointer dragging also works in embedded browsers and with touch input.
@@ -965,11 +1029,7 @@ document.addEventListener('pointermove', (event) => {
   const target = document.elementFromPoint(event.clientX, event.clientY);
   const drop = target && getDropTarget({ target });
   highlightDrop(drop);
-  const panel = $('#builder-panel'); const rect = panel.getBoundingClientRect();
-  if (event.clientX > rect.left && event.clientX < rect.right && event.clientY > rect.top && event.clientY < rect.bottom) {
-    if (event.clientY < rect.top + 30) panel.scrollTop -= 10;
-    if (event.clientY > rect.bottom - 30) panel.scrollTop += 10;
-  }
+  scrollBuilderDuringDrag(event.clientX,event.clientY);
 }, { passive: false });
 document.addEventListener('pointerup', (event) => {
   if (!pointerDrag || event.pointerId !== pointerDrag.id) return;
@@ -1044,7 +1104,18 @@ $('#project-title').addEventListener('input',event=>{state.name=event.target.val
 $('#projects-button').addEventListener('click',renderProjects);
 $('#create-project-button').addEventListener('click',createProject);
 $('#new-project-button').addEventListener('click',createProject);
-$('#block-library').addEventListener('toggle',()=>{if($('#block-library').open)renderProperties();});
+function syncLibraryClearance(){
+  const drawer=$('.library-drawer'),height=$('#block-library').open?Math.ceil(drawer.getBoundingClientRect().height)+24:0;
+  $('#builder-panel').style.setProperty('--library-clearance',height+'px');
+}
+function scrollBuilderDuringDrag(x,y){
+  const panel=$('#builder-panel'),rect=panel.getBoundingClientRect();
+  const bottom=$('#block-library').open?Math.min(rect.bottom,$('.library-drawer').getBoundingClientRect().top):rect.bottom;
+  if(x<rect.left||x>rect.right||y<rect.top||y>bottom)return;
+  if(y<rect.top+30)panel.scrollTop-=10;
+  else if(y>bottom-30)panel.scrollTop+=10;
+}
+$('#block-library').addEventListener('toggle',()=>{syncLibraryClearance();if($('#block-library').open)renderProperties();});
 $('#result-button').addEventListener('click',showResult);
 $('#view-result-button').addEventListener('click',showFullscreen);
 $('#fullscreen-button').addEventListener('click',showFullscreen);
@@ -1054,6 +1125,7 @@ $('#restore-code-button').addEventListener('click',restoreCode);
 $('#copy-code-button').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('#project-code-text').value);$('#code-transfer-status').textContent='Код скопирован. Сохрани его в доступном месте.';}catch(_){$('#project-code-text').select();$('#code-transfer-status').textContent='Код выделен. Нажми Ctrl+C или ⌘C.';}});
 new ResizeObserver(scalePreview).observe($('#preview-stage'));
 new ResizeObserver(sizeInlineText).observe($('#builder-panel'));
+new ResizeObserver(syncLibraryClearance).observe($('.library-drawer'));
 $('#preview-frame').addEventListener('load',()=>{if(pendingPreviewFocus){$('#preview-frame').contentWindow.postMessage({channel:'web-lab',nonce:previewNonce,focusPath:pendingPreviewFocus},'*');pendingPreviewFocus=null;}});
 window.addEventListener('beforeunload',()=>{flushSource();clearTimeout(saveTimer);persistState();});
 renderProjectHeader();

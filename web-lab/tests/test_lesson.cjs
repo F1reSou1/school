@@ -919,3 +919,55 @@ test('image class guidance updates immediately after inline class edits',t=>{
   assert.match(ui.doc.querySelector('.block-row.selected .photo-class-help').textContent,/hero__img/);
   assert.equal(ui.doc.querySelector('.block-row.selected .node-image-preview img').getAttribute('src'),'assets/cat-window.jpg');
 });
+
+test('third assignment has six phases, nine open theory examples and a demo for every check',t=>{
+  const ui=editor(t);ui.click('#theory-start');finishFirst(ui);finishSecond(ui);ui.run('state.mission=1;updateMissions();');ui.click('#check-button');
+  assert.equal(ui.run('state.mission'),2);
+  assert.equal(ui.doc.querySelectorAll('#theory-task .action-demo').length,9);
+  assert.equal(ui.doc.querySelector('#theory-task details'),null);
+  const examples=[...ui.doc.querySelectorAll('#theory-task .action-demo')];
+  assert.ok(examples.every(el=>el.querySelectorAll('.demo-phase').length===3));
+  assert.match(examples[3].textContent,/Копия/);
+  assert.match(examples[8].textContent,/wrap/);
+  ui.click('#theory-start');
+  assert.equal(ui.doc.querySelectorAll('.third-phase-strip li').length,6);
+  assert.equal(ui.doc.querySelector('.third-phase-strip [aria-current="step"]').dataset.taskStep,'hero-row');
+  assert.equal(ui.doc.querySelectorAll('.third-step-guidance').length,1);
+  assert.equal(ui.run('lessonChecks()[2].length'),22,'criteria remain unchanged');
+  const demos=ui.run('lessonChecks()[2].map(check=>({id:check.id,html:stepDemo(check.id)}))');
+  assert.ok(demos.every(demo=>demo.html.includes('demo-scene')),demos.filter(demo=>!demo.html).map(demo=>demo.id).join(','));
+  assert.match(ui.doc.querySelector('.third-step-guidance').textContent,/Включить Flexbox/);
+});
+
+test('third phases advance automatically, count early work and recover after deleting content',t=>{
+  const ui=editor(t);ui.click('#theory-start');finishFirst(ui);finishSecond(ui);ui.run('state.mission=2;updateMissions();');
+  ui.run(`selectPath('0.0');applyStyles({display:'flex','flex-direction':'row'});`);
+  assert.equal(ui.doc.querySelector('.third-phase-strip [aria-current="step"]').dataset.taskStep,'interests-article');
+  buildCards(ui);
+  assert.equal(ui.doc.querySelector('.third-phase-strip [aria-current="step"]').dataset.taskStep,'shared-cards');
+  assert.equal(ui.doc.querySelectorAll('.third-phase-strip .done').length,4,'all card text and pictures done ahead count');
+  finishThird(ui);
+  assert.equal(ui.percent(),'100%');
+  assert.equal(ui.doc.querySelectorAll('.third-phase-strip .done').length,6);
+  assert.ok(ui.doc.querySelector('.third-finish'));
+  ui.run(`mutateHTML(doc=>doc.querySelector('article > div:nth-child(2) p.interesting__description').textContent='');`);
+  assert.equal(ui.doc.querySelector('.third-phase-strip [aria-current="step"]').dataset.taskStep,'description-1');
+  assert.equal(ui.doc.querySelectorAll('.card-step-overview button').length,4);
+  assert.match(ui.doc.querySelector('.third-step-guidance h3').textContent,/Карточка 2/);
+  ui.run(`missionAction('description-1');`);
+  assert.equal(ui.doc.activeElement.id,'property-text');
+  assert.equal(ui.run(`resolvePath(parseHTML(),state.selectedPath).className`),'interesting__description');
+});
+
+test('block drawer reserves its actual height and drag scroll uses the uncovered tree edge',t=>{
+  const ui=editor(t);ui.click('#theory-start');
+  const panel=ui.doc.querySelector('#builder-panel'),drawer=ui.doc.querySelector('.library-drawer'),library=ui.doc.querySelector('#block-library');
+  panel.getBoundingClientRect=()=>({left:0,right:400,top:100,bottom:700});
+  drawer.getBoundingClientRect=()=>({top:400,height:300});
+  library.open=true;ui.run('syncLibraryClearance();');
+  assert.equal(panel.style.getPropertyValue('--library-clearance'),'324px');
+  panel.scrollTop=10;ui.run('scrollBuilderDuringDrag(200,390);');assert.equal(panel.scrollTop,20);
+  ui.run('scrollBuilderDuringDrag(200,450);');assert.equal(panel.scrollTop,20,'drawer itself does not scroll the covered tree');
+  library.open=false;ui.run('syncLibraryClearance();');
+  assert.equal(panel.style.getPropertyValue('--library-clearance'),'0px');
+});

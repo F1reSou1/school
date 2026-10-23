@@ -89,13 +89,13 @@ window.WorkshopLesson = (() => {
     groups[2].push(row('shared-cards','Назначь четырём карточкам общий класс и оформи его.',cards.length===4&&shared&&firstFour.every(card=>signature(card)===signature(firstFour[0])),'article.interesting',{node:firstFour[0],styleClass:shared||'interesting__card'}));
     const hasPadding=value=>['top','right','bottom','left'].some(side=>parseFloat(value.getPropertyValue('padding-'+side))>0);
     const paddingClass=firstFour.length===4?[...firstFour[0].classList].find(name=>firstFour.every(card=>card.classList.contains(name))&&hasPadding(getStyle(firstFour[0],name))):null;
-    groups[2].push(row('interests-padding','Добавь внутренние отступы у article.interesting, например 16 px.',article&&hasPadding(style(article)),'article.interesting',{styleClass:'interesting',spacing:true}));
-    groups[2].push(row('cards-padding','Задай общий внутренний отступ карточек, например 16 px.',cards.length===4&&paddingClass&&firstFour.every(card=>hasPadding(style(card))),'article.interesting',{node:firstFour[0],styleClass:paddingClass||shared||'interesting__card',spacing:true}));
     for(const [className,label] of [['interesting__title','названий'],['interesting__description','описаний']]){
       const nodes=firstFour.map(card=>child(card,'p.'+className));
       const rule=nodes[0]?getStyle(nodes[0],className):document.createElement('div').style;
       groups[2].push(row(className,`Задай общий стиль ${label} через .${className}.`,nodes.length===4&&nodes.every(Boolean)&&rule.length>0&&nodes.every(node=>signature(node)===signature(nodes[0])),'p.'+className,{styleClass:className}));
     }
+    groups[2].push(row('interests-padding','Добавь внутренние отступы у article.interesting, например 16 px.',article&&hasPadding(style(article)),'article.interesting',{styleClass:'interesting',spacing:true}));
+    groups[2].push(row('cards-padding','Задай общий внутренний отступ карточек, например 16 px.',cards.length===4&&paddingClass&&firstFour.every(card=>hasPadding(style(card))),'article.interesting',{node:firstFour[0],styleClass:paddingClass||shared||'interesting__card',spacing:true}));
     return groups;
   }
   function progress(items){const done=items.filter(item=>item.done).length;return {done,total:items.length,percent:Math.round(done/items.length*100),complete:done===items.length,next:items.find(item=>!item.done)||null};}
