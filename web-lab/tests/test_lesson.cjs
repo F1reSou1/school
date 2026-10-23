@@ -738,7 +738,7 @@ test('theory must be read in sequence before the final assignment opens the edit
 test('first task has four visual demonstrations and circular progress tracks the real checks',t=>{
   const ui=editor(t);ui.click('#theory-start');
   assert.equal(ui.doc.querySelectorAll('#task-checklist .action-demo').length,4);
-  assert.match(ui.doc.querySelector('#heading-next-step').textContent,/Выбери main/);
+  assert.match(ui.doc.querySelector('#heading-next-step').textContent,/Выбрать блок/);
   ui.click('.block-row[data-path="0"] .block-select');
   assert.equal(ui.doc.querySelector('#task-ring').style.strokeDashoffset,'75');
   assert.equal(ui.doc.querySelector('#mission-number').textContent,'1');
@@ -746,4 +746,26 @@ test('first task has four visual demonstrations and circular progress tracks the
   assert.equal(ui.doc.querySelector('#mission-number').textContent,'2');
   assert.equal(ui.doc.querySelectorAll('#task-checklist .action-demo').length,0);
   assert.equal(ui.doc.querySelectorAll('#theory-assignment .action-demo').length,0);
+});
+
+test('demonstrations use the matching editor panel and every theory topic has a visual',t=>{
+  const ui=editor(t);
+  const select=ui.doc.querySelector('#theory-assignment .demo-page-select');
+  assert.ok(select.querySelector('.demo-ui-editor'));
+  assert.equal(select.querySelector('.demo-ui-inspector'),null);
+  assert.equal(select.querySelector('figcaption b').textContent,'Выбрать блок');
+  const background=ui.doc.querySelector('#theory-assignment .demo-page-background');
+  assert.ok(background.querySelector('.demo-ui-inspector .demo-ui-background'));
+  assert.equal(background.querySelector('.demo-ui-editor'),null);
+  assert.match(background.textContent,/Стиль класса.*page.*Текст.*Фон.*Прозрачность фона/s);
+  for(const id of ['name','intro']){
+    const example=ui.doc.querySelector('#theory-assignment .demo-'+id);
+    assert.ok(example.querySelector('.demo-ui-target .demo-ui-text .demo-after'));
+    assert.equal(example.querySelector('.demo-result'),null);
+  }
+  for(let mission=0;mission<3;mission++){
+    ui.run(`state.mission=${mission};openTaskTheory();`);
+    const topics=[...ui.doc.querySelectorAll('.theory-page')].filter(page=>page.id!=='theory-assignment');
+    assert.ok(topics.every(page=>page.querySelector('.theory-visual')),'every topic gets a supporting diagram');
+  }
 });
