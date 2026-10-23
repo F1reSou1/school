@@ -769,3 +769,50 @@ test('demonstrations use the matching editor panel and every theory topic has a 
     assert.ok(topics.every(page=>page.querySelector('.theory-visual')),'every topic gets a supporting diagram');
   }
 });
+
+test('name and intro count before background, accept legitimate phrases and survive reload',t=>{
+  const ui=editor(t);ui.click('#theory-start');
+  const edit=(path,value)=>{const input=ui.doc.querySelector(`[data-text-path="${path}"]`);input.focus();input.value=value;input.dispatchEvent(new ui.win.Event('input',{bubbles:true}));};
+  edit('0.0.0','Привет, я Саша.');
+  edit('0.0.1','Несколько слов обо мне.');
+  assert.equal(ui.percent(),'50%','both text edits count before selecting main or setting background');
+  assert.equal(ui.run('state.lessonActions.includes("page-selected")'),false);
+  assert.equal(ui.doc.querySelectorAll('.step-guidance:not([hidden])').length,1);
+  assert.match(ui.doc.querySelector('.step-guidance:not([hidden]) h3').textContent,/Выбрать блок/);
+  ui.click('.block-row[data-path="0"] .block-select');
+  assert.equal(ui.percent(),'75%');
+  assert.match(ui.doc.querySelector('.step-guidance:not([hidden]) h3').textContent,/Задать фон/);
+  ui.run(`applyStyles({background:'#e4eddb'});persistState();`);
+  assert.equal(ui.percent(),'100%');
+  assert.equal(ui.doc.querySelectorAll('.step-guidance:not([hidden])').length,0);
+  const again=editor(t,JSON.parse(ui.win.localStorage.getItem('web-workshop-projects-v1')));
+  assert.equal(again.percent(),'100%');
+  again.click('#theory-start');
+  again.run(`selectPath('0.0.0');applyProperty('property-text','');`);
+  assert.equal(again.percent(),'75%','empty text cannot retain completion');
+});
+
+test('intro check finds its actual class and HTML edits count in any order',t=>{
+  const ui=editor(t);ui.click('#theory-start');
+  ui.run(`state.mode='code';state.currentFile='index.html';renderEditor();const doc=parseHTML();doc.querySelector('h1').textContent='Мой заголовок';doc.querySelector('p.hero__intro').textContent='Напиши пару предложений о себе.';const extra=doc.createElement('p');extra.textContent='Напиши пару слов о себе или о придуманном герое.';doc.querySelector('header').prepend(extra);$('#code-editor').value=serializeHTML(doc);commitSource();`);
+  assert.equal(ui.percent(),'50%');
+  assert.ok(ui.run(`lessonChecks()[0].find(item=>item.id==='intro').done`));
+  ui.run(`mutateHTML(doc=>{doc.querySelector('h1').textContent='  Привет, я …  ';doc.querySelector('p.hero__intro').textContent='Напиши пару слов о себе или о придуманном герое.';});`);
+  assert.equal(ui.percent(),'0%','original placeholders remain incomplete');
+});
+
+test('theory demo slots open and reveal on entering the scroll viewport',async t=>{
+  const ui=editor(t);let callback,config,observed=[];
+  ui.win.IntersectionObserver=class{constructor(cb,options){callback=cb;config=options;}observe(node){observed.push(node);}disconnect(){}};
+  for(let i=0;i<4;i++)ui.click('#theory-next');
+  assert.equal(observed.length,4);
+  assert.equal(config.root,ui.doc.querySelector('#theory-content'));
+  callback([{target:observed[1],isIntersecting:true}]);
+  await new Promise(resolve=>ui.win.requestAnimationFrame(resolve));
+  assert.equal(observed[1].querySelector('details').open,true);
+  assert.ok(observed[1].classList.contains('is-visible'));
+  callback([{target:observed[1],isIntersecting:false}]);
+  assert.equal(observed[1].classList.contains('is-visible'),false);
+  await new Promise(resolve=>setTimeout(resolve,280));
+  assert.equal(observed[1].querySelector('details').open,false);
+});

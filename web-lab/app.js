@@ -671,11 +671,30 @@ function updateMissions(){
   $('#check-button').textContent=current.complete?(earlierIncomplete>=0?`К задаче ${earlierIncomplete+1}`:state.mission<MISSIONS.length-1?'Следующая задача →':'Сохранить страницу'):'Проверить';
   const clusters=new Map();
   for(const item of groups[state.mission]){const title=stepCluster(item.id,state.mission);if(!clusters.has(title))clusters.set(title,[]);clusters.get(title).push(item);}
+  if(state.mission===0){
+    const labels={'page-select':'Выбрать блок','page-background':'Задать фон',name:'Вписать имя',intro:'Рассказать о себе'};
+    const items=groups[0];
+    $('#task-checklist').innerHTML=`<ol class="step-strip">${items.map((item,i)=>`<li class="${item.done?'done':''} ${item===current.next?'current':''}"><button data-task-step="${item.id}" aria-current="${item===current.next?'step':'false'}"><span aria-hidden="true">${item.done?'✓':i+1}</span>${labels[item.id]}</button></li>`).join('')}</ol><div class="step-guidance-list">${items.map((item,i)=>`<section class="step-guidance" ${item===current.next?'':'hidden'}><div class="step-instruction"><small>Сейчас · шаг ${i+1} из 4</small><h3>${labels[item.id]}</h3><p>${escapeHTML(item.label)}</p><button class="button secondary" data-task-step="${item.id}">Показать где →</button></div><details class="micro-demo" open><summary>Пример действия <span aria-hidden="true">⌄</span></summary>${stepDemo(item.id)}</details></section>`).join('')}</div>`;
+  }else{
   $('#task-checklist').innerHTML=[...clusters].map(([title,items])=>`<section class="step-cluster"><h3>${title}<small>${items.filter(item=>item.done).length}/${items.length}</small></h3><ol>${items.map(item=>`<li class="${item.done?'done':''} ${item===current.next?'current':''}"><button data-task-step="${item.id}"><span aria-hidden="true">${item.done?'✓':item===current.next?'→':'○'}</span>${escapeHTML(item.label)}</button>${state.mission===0?`<details class="micro-demo" ${item===current.next?'open':''}><summary>Как это сделать <span aria-hidden="true">▶</span></summary>${stepDemo(item.id)}</details>`:''}</li>`).join('')}</ol></section>`).join('');
+  }
   if(!$('#hint-box').hidden)$('#hint-box').textContent=mission.hint;
   const key=library.activeId+':'+state.mission,previous=taskPercentages.get(key);
   taskPercentages.set(key,current.percent);
   if(previous!==undefined&&previous<100&&current.complete)toast(`Поздравляем! Задача ${state.mission+1} выполнена на 100%. ${progress.every(item=>item.complete)?'Все задачи пройдены.':earlierIncomplete>=0?'Проверь предыдущие задачи.':'Можно переходить к следующей.'}`);
+}
+let theoryDemoObserver;
+function observeTheoryDemos(){
+  theoryDemoObserver?.disconnect();
+  const slots=[...document.querySelectorAll('#theory-task .theory-demo-slot')];
+  if(typeof IntersectionObserver==='undefined'){slots.forEach(slot=>slot.classList.add('is-visible'));return;}
+  theoryDemoObserver=new IntersectionObserver(entries=>{for(const entry of entries){
+    const slot=entry.target,details=slot.querySelector('details');
+    clearTimeout(slot.closeTimer);
+    if(entry.isIntersecting){details.open=true;requestAnimationFrame(()=>slot.classList.add('is-visible'));}
+    else{slot.classList.remove('is-visible');slot.closeTimer=setTimeout(()=>{if(!slot.classList.contains('is-visible'))details.open=false;},260);}
+  }},{root:$('#theory-content'),rootMargin:'0px 0px -8% 0px',threshold:.05});
+  slots.forEach(slot=>theoryDemoObserver.observe(slot));
 }
 let theoryPageIndex=0,theoryUnlocked=0;
 function demoTreeRow(tag,label,className,content='',target=false){
@@ -689,8 +708,8 @@ function stepDemo(id){
     intro:{title:'Рассказать о себе',detail:'В том же левом меню найди p — Абзац. Под строкой с классом hero__intro напиши пару слов о себе.'}
   },d=demos[id];if(!d)return '';
   const text=id==='name'?'Привет, я Саша':'Люблю музыку и прогулки.';
-  const tree=`<div class="demo-ui-editor"><div class="demo-ui-toolbar"><b>Блоки</b><span>HTML</span><span>CSS</span><span class="demo-ui-undo">↶</span></div><div class="demo-ui-tree">${demoTreeRow('main','Страница','page','',id==='page-select')}<div class="demo-ui-scope"><b>{</b>${demoTreeRow('header','Знакомство','hero')}<div class="demo-ui-scope inner"><b>{</b>${demoTreeRow('h1','Главный заголовок','',id==='name'?text:'',id==='name')}${demoTreeRow('p','Абзац','hero__intro',id==='intro'?text:'',id==='intro')}<b>} <small>&lt;/header&gt;</small></b></div>${demoTreeRow('section','Раздел','interests')}<div class="demo-ui-scope inner"><b>{</b>${demoTreeRow('h2','Заголовок','')}<b>} <small>&lt;/section&gt;</small></b></div><b>} <small>&lt;/main&gt;</small></b></div></div></div>`;
-  const inspector=`<div class="demo-ui-inspector"><header>Стиль блока</header><div class="demo-ui-properties"><small>Выбран элемент</small><code>&lt;main&gt; .page</code><hr><h4>Оформление <span>⌄</span></h4><small class="demo-ui-model">▸ Блочная модель</small><label>Стиль класса<span class="demo-ui-select">.page <b>⌄</b></span></label><small>.page</small><div class="demo-ui-colors"><div><label>Текст</label><span class="demo-ui-color"><i></i>#292d33</span></div><div class="demo-ui-background"><label>Фон</label><span class="demo-ui-color"><i></i><span class="demo-bg-before">#f2f4f6</span><span class="demo-bg-after">#e4eddb</span></span></div></div><label>Прозрачность фона <small>0%</small></label><div class="demo-ui-range"><i></i></div><small>0% — сплошной фон, 100% — прозрачный.</small><label>Размер текста <small>16 px</small></label><div class="demo-ui-range filled"><i></i></div></div></div>`;
+  const tree=`<div class="demo-ui-editor"><div class="demo-ui-toolbar"><b>Блоки</b><span>HTML</span><span>CSS</span><span class="demo-ui-undo">↶</span></div><div class="demo-ui-tree">${demoTreeRow('main','Страница','page','',id==='page-select')}<div class="demo-ui-scope"><b>{</b>${demoTreeRow('header','Знакомство','hero')}<div class="demo-ui-scope inner"><b>{</b>${id!=='intro'?demoTreeRow('h1','Главный заголовок','',id==='name'?text:'',id==='name'):''}${id!=='name'?demoTreeRow('p','Абзац','hero__intro',id==='intro'?text:'',id==='intro'):''}<b>} <small>&lt;/header&gt;</small></b></div><b>} <small>&lt;/main&gt;</small></b></div></div></div>`;
+  const inspector=`<div class="demo-ui-inspector"><header>Стиль блока</header><div class="demo-ui-properties"><small>Выбран элемент</small><code>&lt;main&gt; .page</code><hr><h4>Оформление <span>⌄</span></h4><small class="demo-ui-model">▸ Блочная модель</small><label>Стиль класса<span class="demo-ui-select">.page <b>⌄</b></span></label><small>.page</small><div class="demo-ui-colors"><div><label>Текст</label><span class="demo-ui-color"><i></i>#292d33</span></div><div class="demo-ui-background"><label>Фон</label><span class="demo-ui-color"><i></i><span class="demo-bg-before">#f2f4f6</span><span class="demo-bg-after">#e4eddb</span></span></div></div><div class="demo-ui-secondary"><label>Прозрачность фона <small>0%</small></label><div class="demo-ui-range"><i></i></div><small>0% — сплошной фон, 100% — прозрачный.</small><label>Размер текста <small>16 px</small></label><div class="demo-ui-range filled"><i></i></div></div></div></div>`;
   return `<figure class="action-demo demo-${id}" aria-label="Пример: ${d.title}"><div class="demo-scene" aria-hidden="true">${id==='page-background'?inspector:tree}<span class="demo-cursor">➤</span></div><figcaption><b>${d.title}</b><span>${d.detail}</span><small class="demo-play-hint">Наведи мышь или выдели пример клавишей Tab</small></figcaption></figure>`;
 }
 function theoryVisual(index,title){
@@ -726,6 +745,7 @@ function showTheoryPage(index){
   $('#theory-start').hidden=!final;
   $('#theory-position').textContent=`${index+1} / ${pages.length} · ${final?'Теперь попробуй сам':'Разбираемся по шагам'}`;
   $('#theory-content').scrollTop=0;
+  if(final)observeTheoryDemos();else theoryDemoObserver?.disconnect();
 }
 function openTaskTheory(){
   const mission=MISSIONS[state.mission];theoryPageIndex=0;theoryUnlocked=0;
@@ -736,7 +756,7 @@ function openTaskTheory(){
   for(const child of [...template.content.children]){if(child.tagName==='H3'||!section){section=document.createElement('section');section.className='theory-page';sections.push(section);}section.append(child);}
   sections.forEach((part,i)=>{const title=part.querySelector('h3')?.textContent,visual=theoryVisual(i,title);if(visual)part.querySelector('h3').insertAdjacentHTML('afterend',visual);if(title==='HTML — содержимое и структура')part.querySelector('pre')?.remove();});
   const assignment=$('#theory-assignment'),taskList=$('#theory-task'),sources=$('#theory-sources');assignment.remove();assignment.hidden=false;assignment.classList.add('theory-page');
-  taskList.innerHTML=mission.task.map((text,i)=>`<li><span class="assignment-number">${i+1}</span><div>${escapeHTML(text)}${state.mission===0?`<details class="assignment-demo" ${i===0?'open':''}><summary>Посмотреть пример</summary>${stepDemo(['page-select','page-background','name','intro'][i])}</details>`:''}</div></li>`).join('');
+  taskList.innerHTML=mission.task.map((text,i)=>`<li><span class="assignment-number">${i+1}</span><div>${escapeHTML(text)}${state.mission===0?`<div class="theory-demo-slot"><details class="assignment-demo" open><summary>Посмотреть пример</summary><div class="demo-reveal">${stepDemo(['page-select','page-background','name','intro'][i])}</div></details></div>`:''}</div></li>`).join('');
   sections.push(assignment);
   $('#theory-content').replaceChildren(...sections);
   $('#theory-nav').innerHTML=sections.map((part,i)=>`<button data-theory-page="${i}" aria-label="${escapeHTML(part.querySelector('h3')?.textContent||'Твоя задача')}"><span class="theory-dot">${i+1}</span><span>${escapeHTML(part.querySelector('h3')?.textContent||'Твоя задача')}</span></button>`).join('');

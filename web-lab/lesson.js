@@ -30,9 +30,10 @@ window.WorkshopLesson = (() => {
   function photoKey(source){let hash=2166136261;for(let i=0;i<source.length;i++){hash^=source.charCodeAt(i);hash=Math.imul(hash,16777619);}return (hash>>>0).toString(36);}
   const text = node => node?.textContent.trim() || '';
   const own = node => text(node).length > 0 && !['Привет, я …','Привет, я Саша.','Мой заголовок','Несколько слов обо мне.','Напиши пару слов о себе или о придуманном герое.','Название карточки','Напиши пару предложений о себе.'].includes(text(node));
+  const changedText=(node,initial)=>{const normalize=value=>value.replace(/\s+/g,' ').trim();return Boolean(normalize(text(node)))&&normalize(text(node))!==normalize(initial);};
   const child = (node,selector) => [...(node?.children||[])].find(el=>el.matches(selector));
   function checks(doc, getStyle, state, librarySources = []) {
-    const main=doc.querySelector('main.page'),hero=main?.querySelector('header.hero'),heading=hero?.querySelector('h1'),intro=hero?.querySelector('p');
+    const main=doc.querySelector('main.page'),hero=main?.querySelector('header.hero'),heading=hero?.querySelector('h1'),intro=hero?.querySelector('p.hero__intro')||hero?.querySelector('.hero__item p')||hero?.querySelector('p');
     const item=child(hero,'div.hero__item'),media=child(hero,'img.hero__img,figure.hero__img,div.hero__img'),image=media?.matches('img')?media:media?.querySelector('img');
     const imageSelector='header.hero img.hero__img, header.hero .hero__img img';
     const section=main?.querySelector('section#interests,section.interests')||[...(main?.querySelectorAll('section')||[])].find(el=>/интерес/i.test(text(el.querySelector('h2'))));
@@ -51,8 +52,8 @@ window.WorkshopLesson = (() => {
       [
         row('page-select','Выбрать блок: нажми main в левом меню.',main&&state.lessonActions?.includes('page-selected'),'main.page',{styleClass:'page'}),
         row('page-background','У класса page задай фон.',main&&Boolean(pageStyle.backgroundColor)&&!['transparent','rgba(0, 0, 0, 0)'].includes(pageStyle.backgroundColor),'main.page',{styleClass:'page'}),
-        row('name','В h1 впиши своё имя или имя героя.',own(heading),'header.hero h1'),
-        row('intro','Замени текст абзаца о себе.',own(intro),'header.hero p')
+        row('name','В h1 впиши своё имя или имя героя.',changedText(heading,'Привет, я …'),'header.hero h1'),
+        row('intro','Замени текст абзаца о себе.',changedText(intro,'Напиши пару слов о себе или о придуманном герое.'),'header.hero p.hero__intro,header.hero .hero__item p,header.hero p')
       ],
       [
         row('hero-item','В hero создай div с классом hero__item.',item,'header.hero'),
