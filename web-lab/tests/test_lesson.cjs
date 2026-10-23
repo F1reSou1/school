@@ -22,7 +22,7 @@ function editor(t,book){
   run(fs.readFileSync(path.join(root,'lesson.js'),'utf8'));
   run(fs.readFileSync(path.join(root,'app.js'),'utf8'));
   t.after(()=>{assert.deepEqual(errors,[],'no UI event errors');win.close();});
-  return {win,run,doc:win.document,click:selector=>{const element=win.document.querySelector(selector);assert.ok(element,selector);element.click();},percent:()=>win.document.querySelector('#task-percent').textContent};
+  return {win,run,doc:win.document,click:selector=>{const element=win.document.querySelector(selector);assert.ok(element,selector);if(selector==='#theory-start'){while(!win.document.querySelector('#theory-next').hidden)win.document.querySelector('#theory-next').click();}element.click();},percent:()=>win.document.querySelector('#task-percent').textContent};
 }
 function finishFirst(ui){
   ui.run(`state.lessonActions.push('page-selected');mutateHTML(doc=>{doc.querySelector('h1').textContent='Привет, я Миша.';doc.querySelector('header p').textContent='Люблю музыку.';});selectPath('0');applyStyles({background:'#e5ecf8'});`);
@@ -458,7 +458,7 @@ test('progress and theory acknowledgement survive save/load; legacy projects pre
   assert.equal(restored.doc.querySelector('#theory-dialog').open,true,'unstarted task still gets theory');
   restored.click('#theory-start');restored.run('persistState();');
   const again=editor(t,JSON.parse(restored.win.localStorage.getItem('web-workshop-projects-v1')));
-  assert.equal(again.doc.querySelector('#theory-dialog').open,false,'resume active task without repeating theory');
+  assert.equal(again.doc.querySelector('#theory-dialog').open,true,'theory opens on every page load');
   book.lessonVersion=2;
   const migrated=editor(t,book);
   assert.equal(migrated.run('Object.keys(library.projects).length'),2);
@@ -710,4 +710,40 @@ test('block drawer inserts inside the selected parent and new project preserves 
   assert.ok(ui.run(`library.projects[${JSON.stringify(previous)}].state.files['index.html'].includes('<div')`));
   assert.equal(ui.doc.querySelector('#theory-dialog').open,true);
   assert.equal(ui.percent(),'0%');
+});
+
+test('theory must be read in sequence before the final assignment opens the editor',t=>{
+  const ui=editor(t);
+  assert.equal(ui.doc.querySelector('#theory-start').hidden,true);
+  assert.equal(ui.doc.querySelector('[data-theory-page="4"]').disabled,true);
+  ui.doc.querySelector('#theory-start').click();
+  assert.equal(ui.doc.querySelector('#theory-dialog').open,true);
+  ui.doc.querySelector('#theory-dialog').dispatchEvent(new ui.win.Event('cancel',{cancelable:true}));
+  assert.equal(ui.doc.querySelector('#theory-dialog').open,true);
+  for(let i=1;i<5;i++){
+    ui.click('#theory-next');
+    assert.equal(ui.doc.querySelector('[aria-current="step"][data-theory-page]').dataset.theoryPage,String(i));
+    assert.equal(ui.doc.querySelector('#theory-start').hidden,i!==4);
+  }
+  assert.equal(ui.doc.querySelector('#theory-assignment').hidden,false);
+  assert.equal(ui.doc.querySelectorAll('#theory-assignment .action-demo').length,4);
+  ui.click('#theory-back');assert.equal(ui.doc.querySelector('#theory-start').hidden,true);
+  ui.click('#theory-next');ui.doc.querySelector('#theory-start').click();
+  assert.equal(ui.doc.querySelector('#theory-dialog').open,false);
+  ui.click('#theory-button');
+  assert.equal(ui.doc.querySelector('#theory-start').hidden,true);
+  assert.equal(ui.doc.querySelectorAll('#theory-assignment').length,1);
+});
+
+test('first task has four visual demonstrations and circular progress tracks the real checks',t=>{
+  const ui=editor(t);ui.click('#theory-start');
+  assert.equal(ui.doc.querySelectorAll('#task-checklist .action-demo').length,4);
+  assert.match(ui.doc.querySelector('#heading-next-step').textContent,/Выбери main/);
+  ui.click('.block-row[data-path="0"] .block-select');
+  assert.equal(ui.doc.querySelector('#task-ring').style.strokeDashoffset,'75');
+  assert.equal(ui.doc.querySelector('#mission-number').textContent,'1');
+  finishFirst(ui);ui.click('#check-button');ui.click('#theory-start');
+  assert.equal(ui.doc.querySelector('#mission-number').textContent,'2');
+  assert.equal(ui.doc.querySelectorAll('#task-checklist .action-demo').length,0);
+  assert.equal(ui.doc.querySelectorAll('#theory-assignment .action-demo').length,0);
 });

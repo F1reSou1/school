@@ -255,7 +255,7 @@ function renderTree(properties = true) {
     const itemCount=node.children.length+textNodes.length;
     const children=container?[...node.childNodes].map(child=>child.nodeType===1?row(child,nodePath(child,doc.body),depth+1):child.nodeType===3&&child.textContent.trim()?`<div class="direct-text">${escapeHTML(child.textContent.trim())}</div>`:'').join(''):'';
     const collapsed=container&&(collapsedNodes.has(path)||(!node.children.length&&!expandedEmptyNodes.has(path)));
-    return `<div class="tree-node ${container?'container-node':''} ${itemCount===0?'empty-node':''} ${collapsed?'scope-collapsed':''}" data-node-path="${path}" data-tag="${tag}" style="--level:${depth%4}"><div class="drop-line" data-drop="before" data-path="${path}"></div><div class="block-heading">${container?`<button class="fold-button" data-fold="${path}" aria-expanded="${!collapsed}" aria-label="${collapsed?'Раскрыть':'Свернуть'} ${tag}">${collapsed?'›':'⌄'}</button>`:'<span class="leaf-mark">·</span>'}<div class="block-row ${selected?'selected':''}" draggable="true" data-path="${path}" data-container="${container}" role="group" aria-label="${escapeHTML(tag)}"><button type="button" class="block-select" aria-label="${escapeHTML(tag+': '+summary.slice(0,70))}" aria-pressed="${selected}"><span class="tag-name ${container?'container':''}">&lt;${tag}&gt;</span>${editable?'':`<span class="node-summary">${escapeHTML(summary)}</span>`}</button>${editable?`<textarea class="node-text-input" data-text-path="${path}" ${selected?'id="property-text"':''} rows="1" aria-label="Текст ${tag}" placeholder="Напиши текст">${escapeHTML(textValue)}</textarea>`:''}<input class="node-class-input" data-class-path="${path}" value="${escapeHTML(className)}" placeholder="класс" aria-label="CSS-классы элемента ${tag}" title="Например hero__item. CSS-классы без точки, через пробел. Enter — сохранить, Esc — отменить." autocomplete="off" autocapitalize="off" spellcheck="false">${container?'<span class="scope-inline" aria-hidden="true">{ }</span>':''}<div class="block-row-actions"><button type="button" data-clear-block-classes="${path}" ${className?'':'disabled'}>Снять классы</button><button type="button" data-delete-block="${path}" class="delete-block-button">Удалить блок</button></div></div></div>${container?`<div class="scope-content"><div class="scope-open" data-drop="inside" data-path="${path}" aria-hidden="true">{ </div><div class="scope-body" data-drop="inside" data-path="${path}">${children}<div class="nesting-drop" data-drop="inside" data-path="${path}">+ Вложить в &lt;${tag}&gt;</div></div><div class="scope-close" data-drop="inside" data-path="${path}"><b>}</b><span>&lt;/${tag}&gt;</span></div></div>`:''}<div class="drop-line" data-drop="after" data-path="${path}"></div></div>`;
+    return `<div class="tree-node ${container?'container-node':''} ${itemCount===0?'empty-node':''} ${collapsed?'scope-collapsed':''}" data-node-path="${path}" data-tag="${tag}" style="--level:${depth%4}"><div class="drop-line" data-drop="before" data-path="${path}"></div><div class="block-heading">${container?`<button class="fold-button" data-fold="${path}" aria-expanded="${!collapsed}" aria-label="${collapsed?'Раскрыть':'Свернуть'} ${tag}">${collapsed?'›':'⌄'}</button>`:'<span class="leaf-mark">·</span>'}<div class="block-row ${selected?'selected':''}" draggable="true" data-path="${path}" data-container="${container}" role="group" aria-label="${escapeHTML(tag)}"><button type="button" class="block-select" aria-label="${escapeHTML(tag+': '+summary.slice(0,70))}" aria-pressed="${selected}"><span class="tag-name ${container?'container':''}">&lt;${tag}&gt;</span><span class="node-summary">${escapeHTML(container?summary:tag==='h1'?'Главный заголовок':/^h[2-6]$/.test(tag)?'Заголовок':tag==='p'?'Абзац':summary)}</span></button>${editable?`<textarea class="node-text-input" data-text-path="${path}" ${selected?'id="property-text"':''} rows="1" aria-label="Текст ${tag}" placeholder="Напиши текст">${escapeHTML(textValue)}</textarea>`:''}<input class="node-class-input" data-class-path="${path}" value="${escapeHTML(className)}" placeholder="класс" aria-label="CSS-классы элемента ${tag}" title="Например hero__item. CSS-классы без точки, через пробел. Enter — сохранить, Esc — отменить." autocomplete="off" autocapitalize="off" spellcheck="false">${container?'<span class="scope-inline" aria-hidden="true">{ }</span>':''}<div class="block-row-actions"><button type="button" data-clear-block-classes="${path}" ${className?'':'disabled'}>Снять классы</button><button type="button" data-delete-block="${path}" class="delete-block-button">Удалить блок</button></div></div></div>${container?`<div class="scope-content"><div class="scope-open" data-drop="inside" data-path="${path}" aria-hidden="true">{ </div><div class="scope-body" data-drop="inside" data-path="${path}">${children}<div class="nesting-drop" data-drop="inside" data-path="${path}">+ Вложить в &lt;${tag}&gt;</div></div><div class="scope-close" data-drop="inside" data-path="${path}"><b>}</b><span>&lt;/${tag}&gt;</span></div></div>`:''}<div class="drop-line" data-drop="after" data-path="${path}"></div></div>`;
   }
   $('#block-tree').innerHTML=[...doc.body.children].filter(node=>node.tagName!=='SCRIPT').map(node=>row(node,nodePath(node,doc.body),0)).join('');
   if(properties)renderProperties(doc);
@@ -656,11 +656,13 @@ function updateMissions(){
   $('#mission-number').textContent=String(state.mission+1);
   $('#mission-title').textContent=mission.title;$('#mission-description').textContent=mission.description;
   $('#task-percent').textContent=current.percent+'%';
+  $('#task-ring').style.strokeDashoffset=String(100-current.percent);
   $('#task-progress').value=current.percent;$('#task-progress').setAttribute('aria-label',`Задача ${state.mission+1}: ${current.percent}%`);
   $('#task-count').textContent=`${current.done} из ${current.total} действий`;
   const earlierIncomplete=progress.findIndex((item,i)=>i<state.mission&&!item.complete);
   const status=current.complete?(earlierIncomplete>=0?`Эта задача выполнена. Вернись к задаче ${earlierIncomplete+1}: в ней остались незавершённые шаги.`:state.mission<MISSIONS.length-1?'Задача выполнена! Можно переходить к следующей.':'Все три задачи выполнены! Сохрани страницу и посмотри результат.'):current.next.label;
   $('#next-step').textContent=status;
+  $('#heading-next-step').textContent=current.complete?status:'Сейчас: '+status;
   $('.next-action').classList.remove('needs-attention');
   $('#next-step-label').textContent=current.complete?'Готово':'Сейчас сделай';
   $('#task-success').hidden=!current.complete;
@@ -669,36 +671,57 @@ function updateMissions(){
   $('#check-button').textContent=current.complete?(earlierIncomplete>=0?`К задаче ${earlierIncomplete+1}`:state.mission<MISSIONS.length-1?'Следующая задача →':'Сохранить страницу'):'Проверить';
   const clusters=new Map();
   for(const item of groups[state.mission]){const title=stepCluster(item.id,state.mission);if(!clusters.has(title))clusters.set(title,[]);clusters.get(title).push(item);}
-  $('#task-checklist').innerHTML=[...clusters].map(([title,items])=>`<section class="step-cluster"><h3>${title}<small>${items.filter(item=>item.done).length}/${items.length}</small></h3><ol>${items.map(item=>`<li class="${item.done?'done':''} ${item===current.next?'current':''}"><button data-task-step="${item.id}"><span aria-hidden="true">${item.done?'✓':item===current.next?'→':'○'}</span>${escapeHTML(item.label)}</button></li>`).join('')}</ol></section>`).join('');
+  $('#task-checklist').innerHTML=[...clusters].map(([title,items])=>`<section class="step-cluster"><h3>${title}<small>${items.filter(item=>item.done).length}/${items.length}</small></h3><ol>${items.map(item=>`<li class="${item.done?'done':''} ${item===current.next?'current':''}"><button data-task-step="${item.id}"><span aria-hidden="true">${item.done?'✓':item===current.next?'→':'○'}</span>${escapeHTML(item.label)}</button>${state.mission===0?`<details class="micro-demo" ${item===current.next?'open':''}><summary>Как это сделать <span aria-hidden="true">▶</span></summary>${stepDemo(item.id)}</details>`:''}</li>`).join('')}</ol></section>`).join('');
   if(!$('#hint-box').hidden)$('#hint-box').textContent=mission.hint;
   const key=library.activeId+':'+state.mission,previous=taskPercentages.get(key);
   taskPercentages.set(key,current.percent);
   if(previous!==undefined&&previous<100&&current.complete)toast(`Поздравляем! Задача ${state.mission+1} выполнена на 100%. ${progress.every(item=>item.complete)?'Все задачи пройдены.':earlierIncomplete>=0?'Проверь предыдущие задачи.':'Можно переходить к следующей.'}`);
 }
+let theoryPageIndex=0,theoryUnlocked=0;
+function stepDemo(id){
+  const demos={
+    'page-select':{tag:'main',name:'Страница',text:'Выбери блок main',detail:'Нажми main в дереве, затем выбери .page справа.',control:'Стиль класса',value:'.page',after:'Выбран класс page'},
+    'page-background':{tag:'main',name:'Страница',text:'Поменяй фон',detail:'Справа, в «Оформление», нажми цвет фона и выбери оттенок.',control:'Фон',value:'#e4eddb',after:'Фон страницы изменился'},
+    name:{tag:'h1',name:'Главный заголовок',text:'Впиши своё имя',detail:'Нажми поле под строкой h1 и замени текст. Изменения сразу видны на странице.',control:'Текст внутри h1',value:'Привет, я Саша',after:'Привет, я Саша'},
+    intro:{tag:'p',name:'Абзац',text:'Расскажи о себе',detail:'Под строкой p напиши пару слов о себе или придуманном герое.',control:'Текст внутри p',value:'Люблю музыку и прогулки.',after:'Люблю музыку и прогулки.'}
+  },d=demos[id];if(!d)return '';
+  return `<figure class="action-demo demo-${id}" aria-label="Пример: ${escapeHTML(d.text)}"><div class="demo-scene" aria-hidden="true"><div class="demo-editor"><span class="demo-pane-label">Блоки</span><div class="demo-block"><code>&lt;${d.tag}&gt;</code><b>${d.name}</b><span class="demo-class">${d.tag==='main'?'page':'класс'}</span></div>${['name','intro'].includes(id)?`<div class="demo-input"><span class="demo-before">${id==='name'?'Привет, я …':'Напиши пару слов о себе'}</span><span class="demo-after">${d.value}</span></div>`:''}</div><div class="demo-result"><small>${id.startsWith('page-')?'Оформление → результат':'Твоя страница'}</small><div class="demo-control"><small>${d.control}</small><span>${d.value}</span></div><strong>${d.after}</strong><span class="demo-check">✓</span></div><span class="demo-cursor">➤</span></div><figcaption><b>${d.text}</b><span>${d.detail}</span><small class="demo-play-hint">Наведи мышь или выдели пример клавишей Tab</small></figcaption></figure>`;
+}
 function showTheoryPage(index){
   const pages=[...document.querySelectorAll('.theory-page')];
+  if(!Number.isInteger(index)||index<0||index>=pages.length||index>theoryUnlocked+1)return;
+  theoryPageIndex=index;theoryUnlocked=Math.max(theoryUnlocked,index);
   pages.forEach((page,i)=>page.hidden=i!==index);
-  document.querySelectorAll('[data-theory-page]').forEach((button,i)=>button.setAttribute('aria-current',i===index?'step':'false'));
-  $('#theory-next').hidden=index>=pages.length-1;$('#theory-next').dataset.nextPage=String(index+1);
+  document.querySelectorAll('[data-theory-page]').forEach((button,i)=>{button.setAttribute('aria-current',i===index?'step':'false');button.disabled=i>theoryUnlocked;});
+  const final=index===pages.length-1;
+  $('#theory-next').hidden=final;$('#theory-next').dataset.nextPage=String(index+1);
+  $('#theory-back').disabled=index===0;
+  $('#theory-start').hidden=!final;
+  $('#theory-position').textContent=`${index+1} / ${pages.length} · ${final?'Теперь попробуй сам':'Разбираемся по шагам'}`;
   $('#theory-content').scrollTop=0;
 }
 function openTaskTheory(){
-  const mission=MISSIONS[state.mission];
-  $('#theory-step').textContent=`Задача ${state.mission+1} из ${MISSIONS.length}`;
+  const mission=MISSIONS[state.mission];theoryPageIndex=0;theoryUnlocked=0;
+  $('#theory-step').textContent=`Задача ${state.mission+1} из ${MISSIONS.length} · перед практикой`;
   $('#theory-title').textContent=mission.title;
   const template=document.createElement('template');template.innerHTML=mission.theory;
   const sections=[];let section;
   for(const child of [...template.content.children]){if(child.tagName==='H3'||!section){section=document.createElement('section');section.className='theory-page';sections.push(section);}section.append(child);}
+  const assignment=$('#theory-assignment'),taskList=$('#theory-task'),sources=$('#theory-sources');assignment.remove();assignment.hidden=false;assignment.classList.add('theory-page');
+  taskList.innerHTML=mission.task.map((text,i)=>`<li><span class="assignment-number">${i+1}</span><div>${escapeHTML(text)}${state.mission===0?`<details class="assignment-demo" ${i===0?'open':''}><summary>Посмотреть пример</summary>${stepDemo(['page-select','page-background','name','intro'][i])}</details>`:''}</div></li>`).join('');
+  sections.push(assignment);
   $('#theory-content').replaceChildren(...sections);
-  $('#theory-nav').innerHTML=sections.map((part,i)=>`<button data-theory-page="${i}">${String(i+1).padStart(2,'0')}<span>${escapeHTML(part.querySelector('h3')?.textContent||'Объяснение')}</span></button>`).join('');
+  $('#theory-nav').innerHTML=sections.map((part,i)=>`<button data-theory-page="${i}" aria-label="${escapeHTML(part.querySelector('h3')?.textContent||'Твоя задача')}"><span class="theory-dot">${i+1}</span><span>${escapeHTML(part.querySelector('h3')?.textContent||'Твоя задача')}</span></button>`).join('');
+  sources.innerHTML=mission.sources.map(([name,url])=>`<a href="${url}" target="_blank" rel="noopener">${escapeHTML(name)}</a>`).join('');
+  assignment.append(sources);
+  $('#theory-start').textContent='Вернуться к задаче →';
   showTheoryPage(0);
-  $('#theory-task').innerHTML=mission.task.map(text=>`<li>${escapeHTML(text)}</li>`).join('');
-  $('#theory-sources').innerHTML=mission.sources.map(([name,url])=>`<a href="${url}" target="_blank" rel="noopener">${escapeHTML(name)}</a>`).join('');
-  $('#theory-start').textContent=state.lessonStarted.includes(String(state.mission))?'Вернуться к задаче':'Начать задачу';
-  $('#theory-dialog').showModal();$('#theory-dialog').scrollTop=0;
+  if(!$('#theory-dialog').open)$('#theory-dialog').showModal();
+  $('#theory-dialog').scrollTop=0;
 }
-function showTaskIfNeeded(){if(!state.lessonStarted.includes(String(state.mission)))openTaskTheory();}
+function showTaskIfNeeded(){openTaskTheory();}
 function startTask(){
+  if(theoryPageIndex!==document.querySelectorAll('.theory-page').length-1)return;
   const id=String(state.mission);if(!state.lessonStarted.includes(id))state.lessonStarted.push(id);
   $('#theory-dialog').close();saveDraft();missionAction();
 }
@@ -776,6 +799,7 @@ document.addEventListener('click',event=>{
   const stepButton=event.target.closest('[data-task-step]');if(stepButton)missionAction(stepButton.dataset.taskStep);
   const theoryButton=event.target.closest('[data-theory-page]');if(theoryButton)showTheoryPage(Number(theoryButton.dataset.theoryPage));
   if(event.target.closest('#theory-next'))showTheoryPage(Number($('#theory-next').dataset.nextPage));
+  if(event.target.closest('#theory-back'))showTheoryPage(theoryPageIndex-1);
 
   const target=event.target;
   if(target.closest('[data-class-path],[data-text-path]'))return;
