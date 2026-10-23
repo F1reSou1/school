@@ -646,6 +646,7 @@ function stepCluster(id,mission){
   const card=id.match(/^(?:card|title|description)-(\d)$/);if(card)return '03 / Карточка '+(Number(card[1])+1);
   return id.startsWith('picture-')?'04 / Две картинки':'05 / Общий стиль и отступы';
 }
+const DEMO_STEPS=[['page-select','page-background','name','intro'],['hero-item','hero-text','hero-img','photo-source','text-width','photo-settings']];
 function updateMissions(){
   const groups=lessonChecks(),progress=groups.map(WorkshopLesson.progress),current=progress[state.mission],mission=MISSIONS[state.mission];
   $('#progress-count').textContent=`${progress.filter(item=>item.complete).length} / ${MISSIONS.length}`;
@@ -671,10 +672,10 @@ function updateMissions(){
   $('#check-button').textContent=current.complete?(earlierIncomplete>=0?`К задаче ${earlierIncomplete+1}`:state.mission<MISSIONS.length-1?'Следующая задача →':'Сохранить страницу'):'Проверить';
   const clusters=new Map();
   for(const item of groups[state.mission]){const title=stepCluster(item.id,state.mission);if(!clusters.has(title))clusters.set(title,[]);clusters.get(title).push(item);}
-  if(state.mission===0){
-    const labels={'page-select':'Выбрать блок','page-background':'Задать фон',name:'Изменить заголовок',intro:'Изменить абзац'};
-    const items=groups[0];
-    $('#task-checklist').innerHTML=`<ol class="step-strip">${items.map((item,i)=>`<li class="${item.done?'done':''} ${item===current.next?'current':''}"><button data-task-step="${item.id}" aria-current="${item===current.next?'step':'false'}"><span aria-hidden="true">${item.done?'✓':i+1}</span>${labels[item.id]}</button></li>`).join('')}</ol><div class="step-guidance-list">${items.map((item,i)=>`<section class="step-guidance" ${item===current.next?'':'hidden'}><div class="step-instruction"><small>Сейчас · шаг ${i+1} из 4</small><h3>${labels[item.id]}</h3><p>${escapeHTML(item.label)}</p><button class="button secondary" data-task-step="${item.id}">Показать где →</button></div><details class="micro-demo" open><summary>Пример действия <span aria-hidden="true">⌄</span></summary>${stepDemo(item.id)}</details></section>`).join('')}</div>`;
+  if(state.mission<2){
+    const labels={'page-select':'Выбрать блок','page-background':'Задать фон',name:'Изменить заголовок',intro:'Изменить абзац','hero-item':'Блок с текстом','hero-text':'Вложить текст','hero-img':'Блок картинки','photo-source':'Выбрать фото','text-width':'Ширина текста','photo-settings':'Ширина фото'};
+    const items=groups[state.mission];
+    $('#task-checklist').innerHTML=`<ol class="step-strip ${items.length===6?'six-steps':''}">${items.map((item,i)=>`<li class="${item.done?'done':''} ${item===current.next?'current':''}"><button data-task-step="${item.id}" aria-current="${item===current.next?'step':'false'}"><span aria-hidden="true">${item.done?'✓':i+1}</span>${labels[item.id]}</button></li>`).join('')}</ol><div class="step-guidance-list">${items.map((item,i)=>`<section class="step-guidance" ${item===current.next?'':'hidden'}><div class="step-instruction"><small>Сейчас · шаг ${i+1} из ${items.length}</small><h3>${labels[item.id]}</h3><p>${escapeHTML(item.label)}</p><button class="button secondary" data-task-step="${item.id}">Показать где →</button></div><details class="micro-demo" open><summary>Пример действия <span aria-hidden="true">⌄</span></summary>${stepDemo(item.id)}</details></section>`).join('')}</div>`;
   }else{
   $('#task-checklist').innerHTML=[...clusters].map(([title,items])=>`<section class="step-cluster"><h3>${title}<small>${items.filter(item=>item.done).length}/${items.length}</small></h3><ol>${items.map(item=>`<li class="${item.done?'done':''} ${item===current.next?'current':''}"><button data-task-step="${item.id}"><span aria-hidden="true">${item.done?'✓':item===current.next?'→':'○'}</span>${escapeHTML(item.label)}</button>${state.mission===0?`<details class="micro-demo" ${item===current.next?'open':''}><summary>Как это сделать <span aria-hidden="true">▶</span></summary>${stepDemo(item.id)}</details>`:''}</li>`).join('')}</ol></section>`).join('');
   }
@@ -683,24 +684,12 @@ function updateMissions(){
   taskPercentages.set(key,current.percent);
   if(previous!==undefined&&previous<100&&current.complete)toast(`Поздравляем! Задача ${state.mission+1} выполнена на 100%. ${progress.every(item=>item.complete)?'Все задачи пройдены.':earlierIncomplete>=0?'Проверь предыдущие задачи.':'Можно переходить к следующей.'}`);
 }
-let theoryDemoObserver;
-function observeTheoryDemos(){
-  theoryDemoObserver?.disconnect();
-  const slots=[...document.querySelectorAll('#theory-task .theory-demo-slot')];
-  if(typeof IntersectionObserver==='undefined'){slots.forEach(slot=>slot.classList.add('is-visible'));return;}
-  theoryDemoObserver=new IntersectionObserver(entries=>{for(const entry of entries){
-    const slot=entry.target,details=slot.querySelector('details');
-    clearTimeout(slot.closeTimer);
-    if(entry.isIntersecting){details.open=true;requestAnimationFrame(()=>slot.classList.add('is-visible'));}
-    else{slot.classList.remove('is-visible');slot.closeTimer=setTimeout(()=>{if(!slot.classList.contains('is-visible'))details.open=false;},260);}
-  }},{root:$('#theory-content'),rootMargin:'0px 0px -8% 0px',threshold:.05});
-  slots.forEach(slot=>theoryDemoObserver.observe(slot));
-}
 let theoryPageIndex=0,theoryUnlocked=0;
 function demoTreeRow(tag,label,className,content='',target=false){
   return `<div data-demo-tag="${tag}" class="demo-ui-node ${target?'demo-ui-target':''}"><div class="demo-ui-row"><code class="demo-ui-tag">&lt;${tag}&gt;</code><span>${label}</span><span class="demo-ui-class">${className||'класс'}</span></div>${content?`<div class="demo-ui-text"><span class="demo-before">${tag==='h1'?'Привет, я …':'Напиши пару слов о себе или о придуманном герое.'}</span><span class="demo-after">${content}</span></div>`:''}</div>`;
 }
 function stepDemo(id){
+  if(DEMO_STEPS[1].includes(id))return secondStepDemo(id);
   const demos={
     'page-select':{title:'Выбрать блок',detail:'Нажми строку main — Страница в левом меню. Блок выделится, а его настройки появятся справа.'},
     'page-background':{title:'Поменять фон',detail:'В правом меню выбери стиль .page. Ниже найди «Фон» рядом с «Текст» и нажми цветной квадрат.'},
@@ -711,6 +700,31 @@ function stepDemo(id){
   const tree=`<div class="demo-ui-editor"><div class="demo-ui-toolbar"><b>Блоки</b><span>HTML</span><span>CSS</span><span class="demo-ui-undo">↶</span></div><div class="demo-ui-tree">${demoTreeRow('main','Страница','page','',id==='page-select')}<div class="demo-ui-scope"><b>{</b>${demoTreeRow('header','Знакомство','hero')}<div class="demo-ui-scope inner"><b>{</b>${id!=='intro'?demoTreeRow('h1','Главный заголовок','',id==='name'?text:'',id==='name'):''}${id!=='name'?demoTreeRow('p','Абзац','hero__intro',id==='intro'?text:'',id==='intro'):''}<b>} <small>&lt;/header&gt;</small></b></div><b>} <small>&lt;/main&gt;</small></b></div></div></div>`;
   const inspector=`<div class="demo-ui-inspector"><header>Стиль блока</header><div class="demo-ui-properties"><small>Выбран элемент</small><code>&lt;main&gt; .page</code><hr><h4>Оформление <span>⌄</span></h4><small class="demo-ui-model">▸ Блочная модель</small><label>Стиль класса<span class="demo-ui-select">.page <b>⌄</b></span></label><small>.page</small><div class="demo-ui-colors"><div><label>Текст</label><span class="demo-ui-color"><i></i>#292d33</span></div><div class="demo-ui-background"><label>Фон</label><span class="demo-ui-color"><i></i><span class="demo-bg-before">#f2f4f6</span><span class="demo-bg-after">#e4eddb</span></span></div></div><div class="demo-ui-secondary"><label>Прозрачность фона <small>0%</small></label><div class="demo-ui-range"><i></i></div><small>0% — сплошной фон, 100% — прозрачный.</small><label>Размер текста <small>16 px</small></label><div class="demo-ui-range filled"><i></i></div></div></div></div>`;
   return `<figure class="action-demo demo-${id}" aria-label="Пример: ${d.title}"><div class="demo-scene" aria-hidden="true">${id==='page-background'?inspector:tree}<span class="demo-cursor">➤</span></div><figcaption><b>${d.title}</b><span>${d.detail}</span><small class="demo-play-hint">Наведи мышь или выдели пример клавишей Tab</small></figcaption></figure>`;
+}
+function secondStepDemo(id){
+  const descriptions={
+    'hero-item':['Создай блок с текстом','Выбери header.hero. Открой «Добавить блок», добавь div и впиши ему класс hero__item.'],
+    'hero-text':['Вложи заголовок и абзац','Перемести h1 и p внутрь div.hero__item. В «Ещё настройки» также можно выбрать родителя div.hero__item.'],
+    'hero-img':['Добавь блок картинки','Выбери header.hero, добавь img через шторку и назначь класс hero__img. Картинка должна быть рядом с hero__item.'],
+    'photo-source':['Выбери фото','В окне «Картинки» отправь фото с телефона по QR или выбери готовое. Оба способа засчитываются.'],
+    'text-width':['Ограничь текстовый блок','Выбери div.hero__item. Справа у класса hero__item задай «Макс. ширина блока» до 360 px.'],
+    'photo-settings':['Уменьши картинку','Выбери сам img.hero__img. Справа уменьши «Ширина картинки» до 240 px.']
+  },[title,detail]=descriptions[id];
+  const heading=demoTreeRow('h1','Главный заголовок',''),intro=demoTreeRow('p','Абзац','hero__intro');
+  const item=demoTreeRow('div','Блок','hero__item','',true);
+  const image=`<div class="demo-new-image">${demoTreeRow('img','Картинка','hero__img','',true)}<img src="assets/mountains.jpg" alt=""></div>`;
+  const scope=content=>`<div class="demo-ui-scope inner"><b>{</b>${content}<b>} <small>&lt;/div&gt;</small></b></div>`;
+  const editor=content=>`<div class="demo-ui-editor"><div class="demo-ui-toolbar"><b>Блоки</b><span>HTML</span><span>CSS</span><span class="demo-ui-undo">↶</span></div><div class="demo-ui-tree">${demoTreeRow('header','Знакомство','hero','',true)}<div class="demo-ui-scope inner"><b>{</b>${content}<b>} <small>&lt;/header&gt;</small></b></div></div></div>`;
+  let scene='';
+  if(id==='hero-item')scene=editor(`<div class="demo-add-existing">${heading}${intro}</div><div class="demo-added-node">${item}</div><div class="demo-add-drawer"><b>＋ Добавить блок</b><span><code>div</code> Контейнер <strong>＋</strong></span></div>`);
+  if(id==='hero-text')scene=editor(`<div class="demo-transfer"><div class="transfer-before">${heading}${intro}${item}</div><div class="transfer-after">${item}${scope(heading+intro)}</div></div><div class="demo-parent-control"><small>Ещё настройки → Родитель</small><span>div.hero__item ⌄</span></div>`);
+  if(id==='hero-img')scene=editor(`${demoTreeRow('div','Блок','hero__item')}<div class="demo-added-node">${image}</div><div class="demo-add-drawer"><b>＋ Добавить блок</b><span><code>img</code> Картинка <strong>＋</strong></span></div>`);
+  if(id==='photo-source')scene=`<div class="demo-gallery"><header>Картинки <span>×</span></header><div class="demo-gallery-toolbar"><small>Все · Природа · Космос</small><b>С телефона по QR</b></div><div class="demo-gallery-pictures"><img src="assets/mountains.jpg" alt=""><img src="assets/music.jpg" alt=""></div><div class="demo-gallery-result"><span>Телефон → QR</span><small>или готовая картинка</small><b>Фото в твоём блоке ✓</b></div></div>`;
+  if(['text-width','photo-settings'].includes(id)){
+    const isText=id==='text-width',name=isText?'hero__item':'hero__img';
+    scene=`<div class="demo-ui-inspector demo-width-inspector"><header>Стиль блока</header><div class="demo-ui-properties"><code>&lt;${isText?'div':'img'}&gt; .${name}</code><h4>Оформление <span>⌄</span></h4><label>Стиль класса<span class="demo-ui-select">.${name} <b>⌄</b></span></label><div class="demo-width-target">${isText?`<label>Макс. ширина блока, px</label><div class="demo-number-field"><b>360</b><span>Сбросить</span></div><small>Блок может быть уже, но не шире этого значения.</small>`:`<label>Ширина картинки <output>220 px</output></label><div class="demo-photo-slider"><i></i></div>`}</div><div class="demo-width-preview ${isText?'text-limit':'photo-limit'}">${isText?'<i></i><i></i><i></i>':'<img src="assets/mountains.jpg" alt="">'}</div></div></div>`;
+  }
+  return `<figure class="action-demo second-demo demo-${id}" aria-label="Пример: ${title}"><div class="demo-scene" aria-hidden="true">${scene}<span class="demo-cursor">➤</span></div><figcaption><b>${title}</b><span>${detail}</span></figcaption></figure>`;
 }
 function theoryVisual(index,title){
   const content={
@@ -745,7 +759,6 @@ function showTheoryPage(index){
   $('#theory-start').hidden=!final;
   $('#theory-position').textContent=`${index+1} / ${pages.length} · ${final?'Теперь попробуй сам':'Разбираемся по шагам'}`;
   $('#theory-content').scrollTop=0;
-  if(final)observeTheoryDemos();else theoryDemoObserver?.disconnect();
 }
 function openTaskTheory(){
   const mission=MISSIONS[state.mission];theoryPageIndex=0;theoryUnlocked=0;
@@ -756,7 +769,7 @@ function openTaskTheory(){
   for(const child of [...template.content.children]){if(child.tagName==='H3'||!section){section=document.createElement('section');section.className='theory-page';sections.push(section);}section.append(child);}
   sections.forEach((part,i)=>{const title=part.querySelector('h3')?.textContent,visual=theoryVisual(i,title);if(visual)part.querySelector('h3').insertAdjacentHTML('afterend',visual);if(title==='HTML — содержимое и структура')part.querySelector('pre')?.remove();});
   const assignment=$('#theory-assignment'),taskList=$('#theory-task'),sources=$('#theory-sources');assignment.remove();assignment.hidden=false;assignment.classList.add('theory-page');
-  taskList.innerHTML=mission.task.map((text,i)=>`<li><span class="assignment-number">${i+1}</span><div>${escapeHTML(text)}${state.mission===0?`<div class="theory-demo-slot"><details class="assignment-demo" open><summary>Посмотреть пример</summary><div class="demo-reveal">${stepDemo(['page-select','page-background','name','intro'][i])}</div></details></div>`:''}</div></li>`).join('');
+  taskList.innerHTML=mission.task.map((text,i)=>`<li><span class="assignment-number">${i+1}</span><div>${escapeHTML(text)}${DEMO_STEPS[state.mission]?`<div class="theory-demo-slot is-visible"><div class="assignment-demo"><div class="demo-reveal">${stepDemo(DEMO_STEPS[state.mission][i])}</div></div></div>`:''}</div></li>`).join('');
   sections.push(assignment);
   $('#theory-content').replaceChildren(...sections);
   $('#theory-nav').innerHTML=sections.map((part,i)=>`<button data-theory-page="${i}" aria-label="${escapeHTML(part.querySelector('h3')?.textContent||'Твоя задача')}"><span class="theory-dot">${i+1}</span><span>${escapeHTML(part.querySelector('h3')?.textContent||'Твоя задача')}</span></button>`).join('');

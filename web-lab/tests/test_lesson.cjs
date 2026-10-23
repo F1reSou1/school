@@ -744,8 +744,8 @@ test('first task has four visual demonstrations and circular progress tracks the
   assert.equal(ui.doc.querySelector('#mission-number').textContent,'1');
   finishFirst(ui);ui.click('#check-button');ui.click('#theory-start');
   assert.equal(ui.doc.querySelector('#mission-number').textContent,'2');
-  assert.equal(ui.doc.querySelectorAll('#task-checklist .action-demo').length,0);
-  assert.equal(ui.doc.querySelectorAll('#theory-assignment .action-demo').length,0);
+  assert.equal(ui.doc.querySelectorAll('#task-checklist .action-demo').length,6);
+  assert.equal(ui.doc.querySelectorAll('#theory-assignment .action-demo').length,6);
 });
 
 test('demonstrations use the matching editor panel and every theory topic has a visual',t=>{
@@ -801,20 +801,19 @@ test('intro check finds its actual class and HTML edits count in any order',t=>{
   assert.equal(ui.percent(),'0%','original placeholders remain incomplete');
 });
 
-test('theory demo slots open and reveal on entering the scroll viewport',async t=>{
-  const ui=editor(t);let callback,config,observed=[];
-  ui.win.IntersectionObserver=class{constructor(cb,options){callback=cb;config=options;}observe(node){observed.push(node);}disconnect(){}};
-  for(let i=0;i<4;i++)ui.click('#theory-next');
-  assert.equal(observed.length,4);
-  assert.equal(config.root,ui.doc.querySelector('#theory-content'));
-  callback([{target:observed[1],isIntersecting:true}]);
-  await new Promise(resolve=>ui.win.requestAnimationFrame(resolve));
-  assert.equal(observed[1].querySelector('details').open,true);
-  assert.ok(observed[1].classList.contains('is-visible'));
-  callback([{target:observed[1],isIntersecting:false}]);
-  assert.equal(observed[1].classList.contains('is-visible'),false);
-  await new Promise(resolve=>setTimeout(resolve,280));
-  assert.equal(observed[1].querySelector('details').open,false);
+test('all theory examples stay visible without disclosure or scroll observers',t=>{
+  const ui=editor(t);
+  ui.win.IntersectionObserver=class{constructor(){throw new Error('theory must not hide examples on scroll');}};
+  for(const mission of [0,1]){
+    ui.run(`state.mission=${mission};openTaskTheory();`);
+    for(let i=0;i<4;i++)ui.click('#theory-next');
+    const slots=[...ui.doc.querySelectorAll('#theory-task .theory-demo-slot')];
+    assert.equal(slots.length,mission===0?4:6);
+    assert.ok(slots.every(slot=>!slot.hidden&&slot.classList.contains('is-visible')));
+    assert.equal(ui.doc.querySelector('#theory-task details'),null);
+    ui.doc.querySelector('#theory-content').dispatchEvent(new ui.win.Event('scroll'));
+    assert.ok(slots.every(slot=>!slot.hidden));
+  }
 });
 
 test('any nonempty text counts without greeting, name or sentence requirements',t=>{
@@ -825,4 +824,30 @@ test('any nonempty text counts without greeting, name or sentence requirements',
   }
   ui.run(`mutateHTML(doc=>{doc.querySelector('h1').textContent='   ';doc.querySelector('p.hero__intro').textContent='\\n';});`);
   assert.equal(ui.percent(),'0%','whitespace alone does not count');
+});
+
+test('second task has six illustrated steps and advances from structure to widths',t=>{
+  const ui=editor(t);ui.click('#theory-start');finishFirst(ui);ui.click('#check-button');
+  assert.equal(ui.doc.querySelectorAll('#theory-task .action-demo').length,6);
+  assert.equal(ui.doc.querySelector('#theory-task details'),null);
+  const illustrations=ui.doc.querySelectorAll('#theory-task .action-demo');
+  assert.ok(illustrations[0].querySelector('.demo-add-drawer'));
+  assert.ok(illustrations[1].querySelector('.transfer-after .demo-ui-scope'));
+  assert.ok(illustrations[2].querySelector('[data-demo-tag="img"]'));
+  assert.ok(illustrations[3].querySelector('.demo-gallery'));
+  assert.match(illustrations[4].textContent,/Макс. ширина блока/);
+  assert.match(illustrations[5].textContent,/Ширина картинки/);
+  ui.click('#theory-start');
+  assert.equal(ui.doc.querySelectorAll('.step-strip button').length,6);
+  assert.equal(ui.doc.querySelectorAll('.step-guidance:not([hidden])').length,1);
+  assert.equal(ui.doc.querySelector('.step-strip [aria-current="step"]').dataset.taskStep,'hero-item');
+  buildHero(ui);
+  assert.equal(ui.percent(),'67%');
+  assert.equal(ui.doc.querySelector('.step-strip [aria-current="step"]').dataset.taskStep,'text-width');
+  ui.run(`selectPath('0.0.0');applyStyles({'max-width':'360px'});`);
+  assert.equal(ui.doc.querySelector('.step-strip [aria-current="step"]').dataset.taskStep,'photo-settings');
+  ui.run(`selectPath('0.0.1.0');applyStyles({width:'220px'});`);
+  assert.equal(ui.percent(),'100%');
+  assert.equal(ui.doc.querySelectorAll('.step-strip .done').length,6);
+  assert.equal(ui.doc.querySelectorAll('.step-guidance:not([hidden])').length,0);
 });
